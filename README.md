@@ -95,7 +95,6 @@ The application uses two main databases:
 
 ## Screenshots
 
-(Screenshots will be added here)
 
 ## License
 
@@ -104,5 +103,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - [OpenWeatherMap API](https://openweathermap.org/api) for weather data
-- [Font Awesome](https://fontawesome.com/) for icons
-- [Google Fonts](https://fonts.google.com/) for typography 
