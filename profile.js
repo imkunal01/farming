@@ -28,19 +28,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const logoutBtn = document.getElementById('logout-btn');
     const changePasswordBtn = document.getElementById('change-password-btn');
 
-    // User data (mock data for demo)
-    let userData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'johndoe@example.com',
-        phone: '(555) 123-4567',
-        farmName: 'Green Valley Farm',
-        farmType: 'Mixed Crops',
-        farmAddress: '123 Rural Road, Farmville, CA 95000',
-        bio: 'I have been farming for over 10 years, specializing in sustainable agriculture practices.',
-        profilePicture: '',
-        userType: 'Farmer'
-    };
+    // User data object
+    let userData = {};
 
     // Initialize the profile
     initProfile();
@@ -126,11 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirmDelete && deleteConfirmInput) {
             confirmDelete.addEventListener('click', () => {
                 if (deleteConfirmInput.value === 'DELETE') {
-                    // In a real app, this would call an API to delete the account
-                    showToast('Account deleted successfully. Redirecting...', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
+                    deleteAccount();
                 } else {
                     showToast('Please type DELETE to confirm account deletion', 'error');
                 }
@@ -158,92 +143,292 @@ document.addEventListener('DOMContentLoaded', function() {
             if (changePasswordForm) {
                 changePasswordForm.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    const currentPassword = document.getElementById('current-password');
-                    const newPassword = document.getElementById('new-password');
-                    const confirmPassword = document.getElementById('confirm-password');
-
-                    if (!currentPassword || !newPassword || !confirmPassword) return;
-
-                    if (newPassword.value !== confirmPassword.value) {
-                        showToast('New passwords do not match', 'error');
-                        return;
-                    }
-
-                    // In a real app, this would verify the current password and update to the new one
-                    showToast('Password updated successfully', 'success');
-                    currentPassword.value = '';
-                    newPassword.value = '';
-                    confirmPassword.value = '';
+                    changePassword();
                 });
             }
         }
     }
 
-    // Load user data
+    // Load user data from server
     function loadUserData() {
-        // In a real app, this would fetch data from a server or localStorage
-        const storedUserData = localStorage.getItem('userData');
-        if (storedUserData) {
-            userData = JSON.parse(storedUserData);
-        } else {
-            // Store the mock data for future use
-            localStorage.setItem('userData', JSON.stringify(userData));
-        }
+        fetch('profile.php?action=get_profile')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    userData = data.user;
+                    
+                    // Update profile information
+                    if (displayName) displayName.textContent = userData.name;
+                    if (displayEmail) displayEmail.textContent = userData.email;
+                    if (userTypeElement) userTypeElement.textContent = userData.user_type;
 
-        // Update profile information
-        if (displayName) displayName.textContent = `${userData.firstName} ${userData.lastName}`;
-        if (displayEmail) displayEmail.textContent = userData.email;
-        if (userTypeElement) userTypeElement.textContent = userData.userType;
+                    // Form fields
+                    const nameInput = document.getElementById('name');
+                    const emailInput = document.getElementById('email');
+                    
+                    if (nameInput) nameInput.value = userData.name;
+                    if (emailInput) emailInput.value = userData.email;
 
-        // Form fields
+                    // Profile picture
+                    updateProfilePicture(userData.profile_image);
+                } else {
+                    // Handle case where user data couldn't be loaded
+                    console.error('Failed to load user data:', data.message);
+                    // Redirect to login if not authenticated
+                    if (data.message === 'Not authenticated') {
+                        window.location.href = 'login.html';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching user data:', error);
+            });
+    }
+
+    // Save profile changes to server
+    function saveProfileChanges(e) {
+        e.preventDefault();
+        
         const nameInput = document.getElementById('name');
         const emailInput = document.getElementById('email');
+        
+        if (!nameInput || !emailInput) return;
+        
+        const formData = new FormData();
+        formData.append('action', 'update_profile');
+        formData.append('name', nameInput.value);
+        formData.append('email', emailInput.value);
+        
+        fetch('profile.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    userData = { ...userData, ...data.user };
+                    
+                    // Update display elements
+                    if (displayName) displayName.textContent = userData.name;
+                    if (displayEmail) displayEmail.textContent = userData.email;
+                    
+                    // Disable edit mode
+                    disableProfileEdit();
+                    
+                    showToast('Profile updated successfully', 'success');
+                } else {
+                    showToast(data.message || 'Failed to update profile', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating profile:', error);
+                showToast('An error occurred while updating profile', 'error');
+            });
+    }
 
-        if (nameInput) nameInput.value = `${userData.firstName} ${userData.lastName}`;
+    // Handle profile picture upload
+    function handleProfilePictureUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Validate file type
+        const fileType = file.type;
+        if (!fileType.match('image.*')) {
+            showToast('Please select an image file', 'error');
+            return;
+        }
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('action', 'upload_image');
+        formData.append('profile_image', file);
+        
+        // Upload image to server
+        fetch('profile.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update profile picture with the path returned from server
+                    updateProfilePicture(data.profile_image);
+                    showToast('Profile picture updated successfully', 'success');
+                } else {
+                    showToast(data.message || 'Failed to upload profile picture', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error uploading profile picture:', error);
+                showToast('An error occurred while uploading profile picture', 'error');
+            });
+    }
+    
+    // Update profile picture in UI
+    function updateProfilePicture(imagePath) {
+        if (imagePath && imagePath !== '') {
+            // Show profile image
+            if (profileImg) {
+                profileImg.src = imagePath;
+                profileImg.style.display = 'block';
+                if (profileInitial) profileInitial.style.display = 'none';
+            }
+            
+            // Show header profile image
+            if (headerProfileImg) {
+                headerProfileImg.src = imagePath;
+                headerProfileImg.style.display = 'block';
+            }
+        } else {
+            // Show initials if no profile image
+            if (profileInitial && userData.name) {
+                const initials = userData.name.charAt(0).toUpperCase();
+                profileInitial.textContent = initials;
+                profileInitial.style.display = 'flex';
+                if (profileImg) profileImg.style.display = 'none';
+            }
+            
+            // Hide header profile image
+            if (headerProfileImg) {
+                headerProfileImg.style.display = 'none';
+            }
+        }
+    }
+
+    // Change password
+    function changePassword() {
+        const currentPassword = document.getElementById('current-password');
+        const newPassword = document.getElementById('new-password');
+        const confirmPassword = document.getElementById('confirm-password');
+
+        if (!currentPassword || !newPassword || !confirmPassword) return;
+
+        if (newPassword.value !== confirmPassword.value) {
+            showToast('New passwords do not match', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('action', 'change_password');
+        formData.append('current_password', currentPassword.value);
+        formData.append('new_password', newPassword.value);
+        formData.append('confirm_password', confirmPassword.value);
+        
+        fetch('profile.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Password updated successfully', 'success');
+                    // Clear form
+                    currentPassword.value = '';
+                    newPassword.value = '';
+                    confirmPassword.value = '';
+                } else {
+                    showToast(data.message || 'Failed to update password', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error changing password:', error);
+                showToast('An error occurred while changing password', 'error');
+            });
+    }
+
+    // Delete account
+    function deleteAccount() {
+        const formData = new FormData();
+        formData.append('action', 'delete_account');
+        formData.append('confirmation', 'DELETE');
+        
+        fetch('profile.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Account deleted successfully. Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    showToast(data.message || 'Failed to delete account', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting account:', error);
+                showToast('An error occurred while deleting account', 'error');
+            });
+    }
+
+    // Enable profile edit mode
+    function enableProfileEdit() {
+        // Get form elements
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+        const formActions = document.getElementById('form-actions');
+        
+        if (!nameInput || !emailInput) return;
+        
+        // Enable inputs
+        nameInput.disabled = false;
+        emailInput.disabled = false;
+        
+        // Show form actions
+        if (formActions) formActions.style.display = 'flex';
+        
+        // Hide edit button
+        if (editButton) editButton.style.display = 'none';
+    }
+    
+    // Disable profile edit mode
+    function disableProfileEdit() {
+        // Get form elements
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+        const formActions = document.getElementById('form-actions');
+        
+        if (!nameInput || !emailInput) return;
+        
+        // Disable inputs
+        nameInput.disabled = true;
+        emailInput.disabled = true;
+        
+        // Hide form actions
+        if (formActions) formActions.style.display = 'none';
+        
+        // Show edit button
+        if (editButton) editButton.style.display = 'block';
+    }
+    
+    // Cancel profile edit
+    function cancelProfileEdit() {
+        // Reset form values
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+        
+        if (nameInput) nameInput.value = userData.name;
         if (emailInput) emailInput.value = userData.email;
-
-        // Profile picture
-        updateProfilePicture(userData.profilePicture);
+        
+        // Disable edit mode
+        disableProfileEdit();
     }
 
     // Initialize theme settings
     function initThemeSettings() {
+        // Apply saved theme on page load
         const savedTheme = localStorage.getItem('theme') || 'light';
         setTheme(savedTheme);
     }
 
-    // Set theme and update all related elements
+    // Set theme
     function setTheme(theme) {
-        // Apply theme to document
         document.documentElement.setAttribute('data-theme', theme);
-        
-        // Apply dark mode class to body if needed (for backward compatibility)
-        if (theme === 'dark') {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
-        
-        // Update theme toggle button icon
-        updateThemeIcon(theme);
-        
-        // Set checkbox state
-        if (darkModeToggle) {
-            darkModeToggle.checked = theme === 'dark';
-        }
-        
-        // Save theme preference
         localStorage.setItem('theme', theme);
         
-        // Dispatch storage event for other tabs to catch
-        window.dispatchEvent(new StorageEvent('storage', {
-            key: 'theme',
-            newValue: theme
-        }));
-    }
-
-    // Update theme icon based on current theme
-    function updateThemeIcon(theme) {
+        // Update theme toggle icon
         if (themeToggleBtn) {
             const icon = themeToggleBtn.querySelector('i');
             if (icon) {
@@ -256,205 +441,123 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
-    }
-
-    // Change active tab
-    function changeTab(tabId) {
-        profileTabs.forEach(tab => {
-            if (tab.getAttribute('data-tab') === tabId) {
-                tab.classList.add('active');
-            } else {
-                tab.classList.remove('active');
-            }
-        });
-
-        tabContents.forEach(content => {
-            if (content.id === `${tabId}-tab`) {
-                content.classList.add('active');
-            } else {
-                content.classList.remove('active');
-            }
-        });
-    }
-
-    // Enable profile editing
-    function enableProfileEdit() {
-        const formInputs = profileForm.querySelectorAll('input, textarea');
-        formInputs.forEach(input => {
-            input.disabled = false;
-        });
-
-        document.getElementById('form-actions').style.display = 'flex';
-        editButton.style.display = 'none';
-    }
-
-    // Cancel profile editing
-    function cancelProfileEdit() {
-        const formInputs = profileForm.querySelectorAll('input, textarea');
-        formInputs.forEach(input => {
-            input.disabled = true;
-        });
-
-        document.getElementById('form-actions').style.display = 'none';
-        editButton.style.display = 'block';
-
-        // Reset form to original values
-        loadUserData();
-    }
-
-    // Save profile changes
-    function saveProfileChanges(e) {
-        e.preventDefault();
-
-        const nameInput = document.getElementById('name');
-        const emailInput = document.getElementById('email');
-
-        if (!nameInput || !emailInput) return;
-
-        const nameParts = nameInput.value.split(' ');
-        const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(' ');
-
-        userData.firstName = firstName;
-        userData.lastName = lastName;
-        userData.email = emailInput.value;
-
-        // Save changes to localStorage (in a real app, this would send to a server)
-        localStorage.setItem('userData', JSON.stringify(userData));
-
-        // Update display values
-        if (displayName) displayName.textContent = `${firstName} ${lastName}`;
-        if (displayEmail) displayEmail.textContent = emailInput.value;
-
-        // Disable editing
-        const formInputs = profileForm.querySelectorAll('input, textarea');
-        formInputs.forEach(input => {
-            input.disabled = true;
-        });
-
-        document.getElementById('form-actions').style.display = 'none';
-        editButton.style.display = 'block';
-
-        showToast('Profile updated successfully', 'success');
-    }
-
-    // Handle profile picture upload
-    function handleProfilePictureUpload(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const imageData = event.target.result;
-            userData.profilePicture = imageData;
-            
-            // Save to localStorage
-            localStorage.setItem('userData', JSON.stringify(userData));
-            
-            // Update profile images
-            updateProfilePicture(imageData);
-            
-            showToast('Profile picture updated', 'success');
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // Update profile picture across the site
-    function updateProfilePicture(imageData) {
-        // Update profile page image
-        if (profileImg) {
-            if (imageData) {
-                profileImg.src = imageData;
-                profileImg.style.display = 'block';
-                if (profileInitial) profileInitial.style.display = 'none';
-            } else {
-                profileImg.style.display = 'none';
-                if (profileInitial) {
-                    profileInitial.style.display = 'flex';
-                    profileInitial.textContent = getInitials(`${userData.firstName} ${userData.lastName}`);
-                }
-            }
-        }
         
-        // Update header profile image
-        if (headerProfileImg) {
-            if (imageData) {
-                headerProfileImg.src = imageData;
-                headerProfileImg.style.display = 'block';
-                const headerIcon = headerProfileImg.parentElement.querySelector('i');
-                if (headerIcon) headerIcon.style.display = 'none';
-            } else {
-                headerProfileImg.style.display = 'none';
-                const headerIcon = headerProfileImg.parentElement.querySelector('i');
-                if (headerIcon) headerIcon.style.display = 'block';
-            }
+        // Update theme toggle checkbox
+        if (darkModeToggle) {
+            darkModeToggle.checked = theme === 'dark';
         }
+
+        // Dispatch event for other components that might need to know theme changed
+        window.dispatchEvent(new Event('themechange'));
     }
 
-    // Get initials from name
-    function getInitials(name) {
-        return name
-            .split(' ')
-            .map(word => word.charAt(0))
-            .join('')
-            .toUpperCase()
-            .substring(0, 2);
+    // Change tab
+    function changeTab(tabId) {
+        // Deactivate all tabs
+        profileTabs.forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Activate selected tab
+        const selectedTab = document.querySelector(`.profile-tab[data-tab="${tabId}"]`);
+        if (selectedTab) selectedTab.classList.add('active');
+        
+        // Hide all tab contents
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        const selectedContent = document.getElementById(`${tabId}-tab`);
+        if (selectedContent) selectedContent.classList.add('active');
     }
 
     // Export user data
     function exportUserData() {
-        const dataStr = JSON.stringify(userData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'user_data.json';
-        a.click();
-        
-        URL.revokeObjectURL(url);
-        showToast('Data exported successfully', 'success');
+        fetch('profile.php?action=get_profile')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Create file for download
+                    const exportData = JSON.stringify(data.user, null, 2);
+                    const blob = new Blob([exportData], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Create download link
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'farming_app_profile_export.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    // Clean up
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    showToast('Profile data exported successfully', 'success');
+                } else {
+                    showToast(data.message || 'Failed to export data', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error exporting profile data:', error);
+                showToast('An error occurred while exporting data', 'error');
+            });
     }
 
     // Clear app data
     function clearAppData() {
-        if (confirm('This will clear all app data including your profile information. Continue?')) {
-            localStorage.clear();
-            showToast('All data cleared. Reloading page...', 'info');
+        if (confirm('This will clear all locally stored app data like theme preferences. Your profile data on the server will not be affected. Continue?')) {
+            // Only clear theme and other app settings, not user data
+            localStorage.removeItem('theme');
+            localStorage.removeItem('chatbot_welcomed');
+            
+            showToast('App data cleared successfully. Refreshing...', 'success');
             setTimeout(() => {
                 window.location.reload();
-            }, 2000);
+            }, 1500);
         }
     }
 
     // Logout user
     function logoutUser() {
-        // In a real app, this would clear session/auth data
-        window.location.href = 'login.html';
+        // Send logout request to server
+        fetch('login.php?action=logout')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Redirect to login page
+                    window.location.href = 'login.html';
+                } else {
+                    showToast(data.message || 'Failed to logout', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error logging out:', error);
+                showToast('An error occurred while logging out', 'error');
+            });
     }
 
     // Show toast notification
     function showToast(message, type = 'info') {
-        const toastContainer = document.querySelector('.toast-container');
-        if (!toastContainer) return;
+        // Create toast if it doesn't exist
+        let toast = document.getElementById('toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast';
+            document.body.appendChild(toast);
+        }
         
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+        // Set toast content and type
         toast.textContent = message;
+        toast.className = `toast ${type}`;
         
-        toastContainer.appendChild(toast);
+        // Show toast
+        toast.classList.add('show');
         
-        // Make the toast visible
-        setTimeout(() => {
-            toast.classList.add('show');
-        }, 10);
-        
-        // Remove the toast after a delay
+        // Hide toast after 3 seconds
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => {
-                toast.remove();
-            }, 300);
         }, 3000);
     }
 }); 

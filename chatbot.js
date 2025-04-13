@@ -1,4 +1,3 @@
-// AI Chatbot Functionality
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const chatToggle = document.getElementById('chatbot-toggle');

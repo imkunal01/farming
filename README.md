@@ -76,13 +76,22 @@ The application uses two main databases:
 ## File Structure
 
 - **index.html**: Main landing page
-- **login.html/login.php**: User authentication
-- **profile.html/profile.php**: User profile management
-- **dashboard.html**: Weather dashboard
-- **main.html**: Crop estimation tool
+- **dashboard.html**: Weather monitoring dashboard
+- **main.html**: Crop estimation interface
+- **login.html**: User authentication page
+- **profile.html**: User profile management
+- **styles.css**: Main stylesheet
+- **login.css**: Login page specific styles
+- **profile.css**: Profile page specific styles
+- **chatbot.js**: Floating AI chatbot functionality
+- **index.js**: Homepage and shared functionality
+- **login.js**: Authentication handling
+- **profile.js**: Profile management functionality
+- **dashboard.js**: Weather monitoring functionality
+- **setup_database.sql**: Database setup script
+- **crop_estimation.sql**: Crop estimation database schema
 - **pest_tracker/**: Pest tracking module
 - **crop_planner/**: Crop rotation planning module
-- **ai_assistant/**: AI chatbot assistant
 
 ## Screenshots
 
