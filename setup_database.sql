@@ -67,7 +67,13 @@ CREATE TABLE IF NOT EXISTS community_topics (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Create pest_reports table
+-- Switch back to farming_app for pest_reports table
+USE farming_app;
+
+-- Drop existing pest_reports table if needed to update structure
+DROP TABLE IF EXISTS pest_reports;
+
+-- Create pest_reports table with proper structure including images field
 CREATE TABLE IF NOT EXISTS pest_reports (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -78,14 +84,16 @@ CREATE TABLE IF NOT EXISTS pest_reports (
     affected_crops VARCHAR(255),
     severity ENUM('low', 'medium', 'high') NOT NULL,
     location VARCHAR(255) NOT NULL,
-    latitude DOUBLE NOT NULL,
-    longitude DOUBLE NOT NULL,
+    latitude DOUBLE,
+    longitude DOUBLE,
     treatment TEXT,
+    images TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Add foreign key constraint to estimates table
+USE crop_estimation;
 ALTER TABLE estimates
 ADD CONSTRAINT fk_user_estimate
 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
@@ -93,4 +101,10 @@ FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 -- Create a test user for login testing (password: password123)
 USE farming_app;
 INSERT INTO users (name, email, password, user_type) 
-VALUES ('Test User', 'test@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'regular'); 
+VALUES ('Test User', 'test@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'regular')
+ON DUPLICATE KEY UPDATE name = name; -- Avoid error if already exists
+
+-- Insert sample pest report for testing
+INSERT INTO pest_reports (pest_name, category, date_observed, description, affected_crops, severity, location) 
+VALUES ('Aphids', 'insect', CURDATE(), 'Small green insects on leaves', 'Tomatoes', 'medium', 'North Field')
+ON DUPLICATE KEY UPDATE pest_name = pest_name; -- This won't actually execute since there's no unique constraint 

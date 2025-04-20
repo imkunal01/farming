@@ -13,6 +13,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup event listeners
     function initChatbot() {
+        // HARDCODED API KEY FOR PERSONAL TESTING ONLY - Replace with your actual key
+        localStorage.setItem('gemini_api_key', 'AIzaSyCtx40hyxcUGr7su9OHsD3v4Ka3yk6arSg');
+        
+        // Initialize resizable chatbot
+        initResizableChatbot();
+        
         // Toggle chatbot visibility
         if (chatToggle) {
             chatToggle.addEventListener('click', toggleChatbot);
@@ -56,24 +62,106 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Welcome message on first load
         if (chatMessages && !localStorage.getItem('chatbot_welcomed')) {
-            addMessageToChat('bot', "Welcome to the Farming Assistant! I can help with questions about crops, pests, soil management, and more. Type a question or try one of the quick replies below.");
+            addMessageToChat('bot', "Welcome to AgriGlance AI Assistant! I can help with questions about crops, pests, soil management, and more. Type a question or try one of the quick replies below.");
+            
+            // Check if API key is set
+            const apiKey = localStorage.getItem('gemini_api_key');
+            if (!apiKey || apiKey.trim() === '') {
+                setTimeout(() => {
+                    addMessageToChat('bot', "To use advanced AI features, please set your Gemini API key. You can get a free API key from <a href='https://ai.google.dev/' target='_blank'>Google AI Studio</a>.");
+                    addApiKeyInput();
+                }, 1000);
+            }
+            
             localStorage.setItem('chatbot_welcomed', 'true');
         }
         
         // Apply theme to chatbot based on current theme
         applyCurrentTheme();
         
-        // Listen for theme changes
+        // Listen for theme changes via localStorage
         window.addEventListener('storage', function(e) {
             if (e.key === 'theme') {
                 applyCurrentTheme();
             }
         });
+        
+        // Listen for custom themechange event
+        window.addEventListener('themechange', function() {
+            applyCurrentTheme();
+        });
+        
+        // Also listen for data-theme attribute changes on the document element
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'data-theme') {
+                    applyCurrentTheme();
+                }
+            });
+        });
+        
+        observer.observe(document.documentElement, { attributes: true });
+    }
+    
+    // Add API key input UI
+    function addApiKeyInput() {
+        if (!chatMessages) return;
+        
+        const apiKeyContainer = document.createElement('div');
+        apiKeyContainer.className = 'api-key-container';
+        apiKeyContainer.innerHTML = `
+            <div class="api-key-input-wrapper">
+                <input type="text" id="gemini-api-key" placeholder="Enter your Gemini API key">
+                <button id="save-api-key">Save</button>
+            </div>
+            <p class="api-key-help">The API key will be stored in your browser's local storage and is not sent to our servers.</p>
+        `;
+        
+        chatMessages.appendChild(apiKeyContainer);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Add event listener to save button
+        const saveButton = document.getElementById('save-api-key');
+        const apiKeyInput = document.getElementById('gemini-api-key');
+        
+        if (saveButton && apiKeyInput) {
+            saveButton.addEventListener('click', function() {
+                const apiKey = apiKeyInput.value.trim();
+                if (apiKey !== '') {
+                    localStorage.setItem('gemini_api_key', apiKey);
+                    apiKeyContainer.remove();
+                    addMessageToChat('bot', "Thanks! Your API key has been saved. You can now use advanced AI features.");
+                }
+            });
+            
+            // Also save on Enter key
+            apiKeyInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const apiKey = apiKeyInput.value.trim();
+                    if (apiKey !== '') {
+                        localStorage.setItem('gemini_api_key', apiKey);
+                        apiKeyContainer.remove();
+                        addMessageToChat('bot', "Thanks! Your API key has been saved. You can now use advanced AI features.");
+                    }
+                }
+            });
+        }
     }
     
     // Apply the current theme to chatbot elements
     function applyCurrentTheme() {
-        const currentTheme = localStorage.getItem('theme') || 'light';
+        // Check both localStorage and document attribute
+        // Document attribute takes precedence if available
+        const docTheme = document.documentElement.getAttribute('data-theme');
+        const localTheme = localStorage.getItem('theme');
+        const currentTheme = docTheme || localTheme || 'light';
+        
+        // Ensure both are in sync
+        if (docTheme !== localTheme && docTheme) {
+            localStorage.setItem('theme', docTheme);
+        } else if (!docTheme && localTheme) {
+            document.documentElement.setAttribute('data-theme', localTheme);
+        }
         
         if (chatWrapper) {
             if (currentTheme === 'dark') {
@@ -133,7 +221,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create message element
         const messageEl = document.createElement('div');
         messageEl.className = sender === 'user' ? 'user-message' : 'bot-message';
-        messageEl.textContent = message;
+        
+        // Handle links in messages
+        if (message.includes('<a')) {
+            messageEl.innerHTML = message;
+        } else {
+            messageEl.textContent = message;
+        }
         
         // Add custom data attribute for theme identification
         messageEl.setAttribute('data-sender', sender);
@@ -181,6 +275,28 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show typing indicator
         showTypingIndicator();
         
+        // Special command to set API key
+        if (message.toLowerCase().startsWith('/setapikey ')) {
+            const apiKey = message.substring(11).trim();
+            if (apiKey) {
+                localStorage.setItem('gemini_api_key', apiKey);
+                hideTypingIndicator();
+                addMessageToChat('bot', "API key has been set successfully! You can now use advanced AI features.");
+            } else {
+                hideTypingIndicator();
+                addMessageToChat('bot', "Please provide a valid API key. Format: /setapikey YOUR_API_KEY");
+            }
+            return;
+        }
+        
+        // Handle API key management commands
+        if (message.toLowerCase() === '/apikey') {
+            hideTypingIndicator();
+            addMessageToChat('bot', "You can set your Gemini API key with the command '/setapikey YOUR_API_KEY' or via the input below:");
+            addApiKeyInput();
+            return;
+        }
+        
         // Check if we have an API key
         const apiKey = localStorage.getItem('gemini_api_key');
         
@@ -201,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let errorMessage = "I couldn't connect to the AI service. ";
                 
                 if (error.message.includes('403') || error.message.includes('invalid') || error.message.includes('400')) {
-                    errorMessage += "Your API key might be invalid or incorrectly formatted. Please check it's entered correctly in your profile settings.";
+                    errorMessage += "Your API key might be invalid or incorrectly formatted. Please check it's entered correctly.";
                     // Clear the invalid API key
                     localStorage.removeItem('gemini_api_key');
                     
@@ -209,6 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const fallbackResponse = getMockResponse(message);
                     setTimeout(() => {
                         addMessageToChat('bot', "In the meantime, here's what I can tell you: " + fallbackResponse);
+                        addApiKeyInput();
                     }, 1000);
                 } else {
                     // If it's another type of error, use mock response
@@ -237,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // If this is the first user message, add a note about the API key
                 if (chatHistory.filter(msg => msg.role === 'user').length === 1) {
                     setTimeout(() => {
-                        addMessageToChat('bot', "For more advanced responses, you can add your Gemini API key in your profile settings.");
+                        addMessageToChat('bot', "For more advanced responses, you can add your Gemini API key. Type /apikey to set it up.");
                     }, 1000);
                 }
             }, 1000);
@@ -249,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Prepare the system prompt
         const systemPrompt = {
             role: "system",
-            content: `You are an AI farming assistant specialized in agricultural knowledge. Your expertise includes:
+            content: `You are an AI agricultural assistant for AgriGlance, specialized in farming knowledge. Your expertise includes:
             1. Crop selection, cultivation, and care
             2. Soil health and management
             3. Pest and disease identification and control
@@ -277,7 +394,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    contents: messages,
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [{ text: message }]
+                        }
+                    ],
+                    safetySettings: [
+                        {
+                            category: "HARM_CATEGORY_HARASSMENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_HATE_SPEECH",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        }
+                    ],
                     generationConfig: {
                         temperature: 0.7,
                         topK: 40,
@@ -316,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (message.includes('api') || message.includes('key')) {
-            return "To use the full AI capabilities, you can add your Gemini API key in your profile settings. You can get a free API key from Google AI Studio (ai.google.dev). Without an API key, I'll provide helpful pre-written responses to common farming questions.";
+            return "To use the full AI capabilities, you can add your Gemini API key. You can get a free API key from Google AI Studio (ai.google.dev). Type /apikey to set it up. Without an API key, I'll provide helpful pre-written responses to common farming questions.";
         }
         
         if (message.includes('weather')) {
@@ -356,7 +496,57 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Default response for unrecognized queries
-        return "I don't have specific information on that topic yet. For more detailed assistance, consider consulting with your local agricultural extension service or a professional agronomist.";
+        return "I don't have specific information on that topic yet. For more detailed assistance, please set up your Gemini API key for advanced AI responses or check the relevant section in our app.";
+    }
+
+    // Make chatbot resizable
+    function initResizableChatbot() {
+        if (!chatWrapper) return;
+        
+        // Create and append resize handle
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'chatbot-resize-handle';
+        chatWrapper.appendChild(resizeHandle);
+        
+        let startX, startY, startWidth, startHeight;
+        
+        // Mouse down event to start resizing
+        resizeHandle.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            startX = e.clientX;
+            startY = e.clientY;
+            startWidth = parseInt(document.defaultView.getComputedStyle(chatWrapper).width, 10);
+            startHeight = parseInt(document.defaultView.getComputedStyle(chatWrapper).height, 10);
+            
+            // Add event listeners for resizing
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+        });
+        
+        // Resize function
+        function resize(e) {
+            chatWrapper.style.width = (startWidth + e.clientX - startX) + 'px';
+            chatWrapper.style.height = (startHeight + e.clientY - startY) + 'px';
+        }
+        
+        // Stop resizing function
+        function stopResize() {
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResize);
+            
+            // Save the dimensions to localStorage
+            localStorage.setItem('chatbot_width', chatWrapper.style.width);
+            localStorage.setItem('chatbot_height', chatWrapper.style.height);
+        }
+        
+        // Restore saved dimensions if available
+        const savedWidth = localStorage.getItem('chatbot_width');
+        const savedHeight = localStorage.getItem('chatbot_height');
+        
+        if (savedWidth && savedHeight) {
+            chatWrapper.style.width = savedWidth;
+            chatWrapper.style.height = savedHeight;
+        }
     }
 });
 
@@ -367,51 +557,166 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add the CSS rules for dark theme support
     style.textContent = `
+        [data-theme="dark"] .chatbot-wrapper,
         .chatbot-wrapper.dark-theme {
             background-color: #1e1e1e;
             color: #f0f0f0;
         }
         
+        [data-theme="dark"] .chatbot-messages,
         .chatbot-wrapper.dark-theme .chatbot-messages {
             background-color: #1e1e1e;
         }
         
+        [data-theme="dark"] .bot-message,
         .chatbot-wrapper.dark-theme .bot-message {
             background-color: #2c2c2c;
             color: #f0f0f0;
             border: 1px solid #444;
         }
         
+        [data-theme="dark"] .user-message,
         .chatbot-wrapper.dark-theme .user-message {
             background-color: #4caf50;
             color: white;
         }
         
+        [data-theme="dark"] .chatbot-input-container,
         .chatbot-wrapper.dark-theme .chatbot-input-container {
             background-color: #1e1e1e;
             border-top: 1px solid #444;
         }
         
+        [data-theme="dark"] .chatbot-input-container input,
         .chatbot-wrapper.dark-theme .chatbot-input-container input {
             background-color: #2c2c2c;
             color: #f0f0f0;
             border: 1px solid #444;
         }
         
+        [data-theme="dark"] .chatbot-quick-replies,
         .chatbot-wrapper.dark-theme .chatbot-quick-replies {
             background-color: #1e1e1e;
             border-top: 1px solid #444;
         }
         
+        [data-theme="dark"] .quick-reply,
         .chatbot-wrapper.dark-theme .quick-reply {
             background-color: #2c2c2c;
             color: #f0f0f0;
             border: 1px solid #444;
         }
         
+        [data-theme="dark"] .quick-reply:hover,
         .chatbot-wrapper.dark-theme .quick-reply:hover {
             background-color: #4caf50;
             color: white;
+        }
+        
+        /* API Key Input Styling */
+        .api-key-container {
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            background-color: rgba(76, 175, 80, 0.1);
+            border: 1px dashed #4caf50;
+        }
+        
+        [data-theme="dark"] .api-key-container,
+        .chatbot-wrapper.dark-theme .api-key-container {
+            background-color: rgba(76, 175, 80, 0.05);
+            border: 1px dashed #4caf50;
+        }
+        
+        .api-key-input-wrapper {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .api-key-input-wrapper input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-family: inherit;
+        }
+        
+        [data-theme="dark"] .api-key-input-wrapper input,
+        .chatbot-wrapper.dark-theme .api-key-input-wrapper input {
+            background-color: #2c2c2c;
+            color: #f0f0f0;
+            border: 1px solid #444;
+        }
+        
+        .api-key-input-wrapper button {
+            padding: 8px 16px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+        }
+        
+        .api-key-help {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        [data-theme="dark"] .api-key-help,
+        .chatbot-wrapper.dark-theme .api-key-help {
+            color: #aaa;
+        }
+        
+        /* Make chatbot text smaller and more readable */
+        .bot-message, .user-message {
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 10px 12px;
+        }
+        
+        .chatbot-input-container input {
+            font-size: 14px;
+        }
+        
+        .quick-reply {
+            font-size: 12px;
+        }
+        
+        .chatbot-header h3 {
+            font-size: 16px;
+        }
+        
+        .api-key-help {
+            font-size: 11px;
+        }
+        
+        /* Resizable chatbot styles */
+        .chatbot-wrapper {
+            resize: both;
+            overflow: hidden;
+            min-width: 300px;
+            min-height: 400px;
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+        
+        .chatbot-resize-handle {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 15px;
+            height: 15px;
+            background-image: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.2) 50%);
+            cursor: nwse-resize;
+            z-index: 1000;
+        }
+        
+        .chatbot-messages {
+            height: calc(100% - 130px); /* Adjust based on header and input height */
         }
     `;
     

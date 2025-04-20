@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
         'grains': ['wheat', 'corn', 'rice']
     };
     
+    // Seasonal crops data
+    const seasonalCrops = {
+        'spring': ['peas', 'potatoes', 'lettuce', 'spinach', 'carrots'],
+        'summer': ['tomatoes', 'peppers', 'corn', 'beans', 'strawberries'],
+        'fall': ['kale', 'spinach', 'lettuce', 'beets', 'carrots'],
+        'winter': ['wheat', 'rice', 'kale']
+    };
+    
     // Compatibility matrix (simplified for demo)
     const cropCompatibility = {
         'legumes': {
@@ -41,6 +49,166 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // Suggested crop rotations by soil type and year
+    const suggestedRotations = {
+        'clay': {
+            'year1': {
+                'spring': 'peas',
+                'summer': 'corn',
+                'fall': 'kale',
+                'winter': 'wheat'
+            },
+            'year2': {
+                'spring': 'potatoes',
+                'summer': 'tomatoes',
+                'fall': 'spinach',
+                'winter': ''
+            },
+            'year3': {
+                'spring': 'beans',
+                'summer': 'peppers',
+                'fall': 'lettuce',
+                'winter': ''
+            },
+            'year4': {
+                'spring': 'carrots',
+                'summer': 'corn',
+                'fall': 'lentils',
+                'winter': 'wheat'
+            }
+        },
+        'sandy': {
+            'year1': {
+                'spring': 'carrots',
+                'summer': 'beans',
+                'fall': 'spinach',
+                'winter': ''
+            },
+            'year2': {
+                'spring': 'peas',
+                'summer': 'tomatoes',
+                'fall': 'lettuce',
+                'winter': ''
+            },
+            'year3': {
+                'spring': 'potatoes',
+                'summer': 'peppers',
+                'fall': 'kale',
+                'winter': ''
+            },
+            'year4': {
+                'spring': 'beans',
+                'summer': 'corn',
+                'fall': 'beets',
+                'winter': 'rice'
+            }
+        },
+        'loamy': {
+            'year1': {
+                'spring': 'peas',
+                'summer': 'tomatoes',
+                'fall': 'spinach',
+                'winter': 'wheat'
+            },
+            'year2': {
+                'spring': 'potatoes',
+                'summer': 'corn',
+                'fall': 'kale',
+                'winter': ''
+            },
+            'year3': {
+                'spring': 'beans',
+                'summer': 'peppers',
+                'fall': 'lettuce',
+                'winter': 'rice'
+            },
+            'year4': {
+                'spring': 'carrots',
+                'summer': 'strawberries',
+                'fall': 'lentils',
+                'winter': ''
+            }
+        },
+        'silty': {
+            'year1': {
+                'spring': 'potatoes',
+                'summer': 'peppers',
+                'fall': 'kale',
+                'winter': ''
+            },
+            'year2': {
+                'spring': 'beans',
+                'summer': 'corn',
+                'fall': 'spinach',
+                'winter': 'wheat'
+            },
+            'year3': {
+                'spring': 'carrots',
+                'summer': 'tomatoes',
+                'fall': 'lettuce',
+                'winter': ''
+            },
+            'year4': {
+                'spring': 'peas',
+                'summer': 'strawberries',
+                'fall': 'beets',
+                'winter': 'rice'
+            }
+        },
+        'peaty': {
+            'year1': {
+                'spring': 'carrots',
+                'summer': 'corn',
+                'fall': 'kale',
+                'winter': ''
+            },
+            'year2': {
+                'spring': 'peas',
+                'summer': 'peppers',
+                'fall': 'spinach',
+                'winter': 'wheat'
+            },
+            'year3': {
+                'spring': 'potatoes',
+                'summer': 'tomatoes',
+                'fall': 'lettuce',
+                'winter': ''
+            },
+            'year4': {
+                'spring': 'beans',
+                'summer': 'strawberries',
+                'fall': 'beets',
+                'winter': 'rice'
+            }
+        },
+        'chalky': {
+            'year1': {
+                'spring': 'peas',
+                'summer': 'tomatoes',
+                'fall': 'spinach',
+                'winter': ''
+            },
+            'year2': {
+                'spring': 'beans',
+                'summer': 'corn',
+                'fall': 'lettuce',
+                'winter': 'wheat'
+            },
+            'year3': {
+                'spring': 'carrots',
+                'summer': 'peppers',
+                'fall': 'kale',
+                'winter': ''
+            },
+            'year4': {
+                'spring': 'potatoes',
+                'summer': 'strawberries',
+                'fall': 'beets',
+                'winter': 'rice'
+            }
+        }
+    };
+    
     // Get crop type from crop name
     const getCropType = (cropName) => {
         for (const [type, crops] of Object.entries(cropGroups)) {
@@ -60,6 +228,114 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportBtn = document.getElementById('export-plan');
     const clearBtn = document.getElementById('clear-plan');
     const addFieldBtn = document.getElementById('add-field');
+    const soilTypeSelect = document.getElementById('soil-type');
+    const suggestRotationBtn = document.getElementById('suggest-rotation');
+    const suggestAllSeasonsBtn = document.getElementById('suggest-all-seasons');
+    
+    // Create seasonal suggestion buttons
+    document.querySelectorAll('.season-header .season-label').forEach(label => {
+        const season = label.textContent.toLowerCase();
+        const suggestBtn = document.createElement('button');
+        suggestBtn.className = 'suggest-season-btn';
+        suggestBtn.title = `Suggest ${season} crops`;
+        suggestBtn.innerHTML = '<i class="fas fa-lightbulb"></i>';
+        suggestBtn.dataset.season = season;
+        suggestBtn.addEventListener('click', () => suggestSeasonalCrops(season));
+        label.appendChild(suggestBtn);
+    });
+    
+    // Function to suggest seasonal crops
+    function suggestSeasonalCrops(season) {
+        if (!seasonalCrops[season]) {
+            alert(`No crop suggestions available for ${season}.`);
+            return;
+        }
+        
+        // Find all slots for this season across all years
+        const seasonSlots = document.querySelectorAll(`.season-slot[data-season="${season}"]`);
+        
+        seasonSlots.forEach(slot => {
+            const yearNum = parseInt(slot.dataset.year);
+            const selectElement = slot.querySelector('.crop-select');
+            
+            if (selectElement) {
+                // Get a random crop from seasonal options
+                const seasonOptions = seasonalCrops[season];
+                
+                // Try to avoid the same crop in consecutive years for the same season
+                let availableCrops = [...seasonOptions];
+                
+                // If we're past year 1, check what was in the previous year
+                if (yearNum > 1) {
+                    const prevYearSlot = document.querySelector(`.season-slot[data-season="${season}"][data-year="${yearNum-1}"]`);
+                    if (prevYearSlot) {
+                        const prevYearCrop = prevYearSlot.querySelector('.crop-select').value;
+                        // Remove the previous year's crop from options if possible
+                        if (prevYearCrop && availableCrops.length > 1) {
+                            availableCrops = availableCrops.filter(crop => crop !== prevYearCrop);
+                        }
+                    }
+                }
+                
+                const randomCrop = availableCrops[Math.floor(Math.random() * availableCrops.length)];
+                
+                // Set the value
+                selectElement.value = randomCrop;
+            }
+        });
+        
+        // Update recommendations
+        updateRecommendations();
+        
+        showSeasonalSuggestionMessage(season);
+    }
+    
+    // Function to show seasonal suggestion message
+    function showSeasonalSuggestionMessage(season) {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message success';
+        messageElement.innerHTML = `<i class="fas fa-check-circle"></i> Applied ${season} crop suggestions.`;
+        
+        const rotationPlan = document.querySelector('.rotation-plan');
+        rotationPlan.insertBefore(messageElement, rotationPlan.firstChild);
+        
+        // Remove message after 3 seconds
+        setTimeout(() => {
+            messageElement.remove();
+        }, 3000);
+    }
+    
+    // Add event listener for suggest rotation button
+    suggestRotationBtn.addEventListener('click', () => {
+        const soilType = soilTypeSelect.value;
+        applySuggestedRotation(soilType);
+    });
+    
+    // Function to apply suggested rotation based on soil type
+    function applySuggestedRotation(soilType) {
+        if (!suggestedRotations[soilType]) {
+            alert('No suggested rotation found for this soil type.');
+            return;
+        }
+        
+        // Apply for all years (up to 4 by default)
+        for (let year = 1; year <= yearCount; year++) {
+            const yearKey = `year${year}`;
+            if (suggestedRotations[soilType][yearKey]) {
+                const seasons = ['spring', 'summer', 'fall', 'winter'];
+                seasons.forEach(season => {
+                    const selector = `.season-slot[data-year="${year}"][data-season="${season}"] .crop-select`;
+                    const selectElement = document.querySelector(selector);
+                    if (selectElement && suggestedRotations[soilType][yearKey][season]) {
+                        selectElement.value = suggestedRotations[soilType][yearKey][season];
+                    }
+                });
+            }
+        }
+        
+        // Update recommendations after applying suggested rotation
+        updateRecommendations();
+    }
     
     // Add year button event listener
     addYearBtn.addEventListener('click', () => {
@@ -171,16 +447,43 @@ document.addEventListener('DOMContentLoaded', () => {
         currentYear = year;
     }
     
+    // Function to validate field input
+    function validateFieldInput() {
+        const fieldName = document.getElementById('field-name').value.trim();
+        const fieldSize = document.getElementById('field-size').value;
+        const fieldNameError = document.getElementById('field-name-error');
+        const fieldSizeError = document.getElementById('field-size-error');
+        let isValid = true;
+        
+        // Reset error messages
+        fieldNameError.textContent = '';
+        fieldSizeError.textContent = '';
+        
+        if (!fieldName) {
+            fieldNameError.textContent = 'Field name is required';
+            isValid = false;
+        }
+        
+        if (!fieldSize) {
+            fieldSizeError.textContent = 'Field size is required';
+            isValid = false;
+        } else if (parseFloat(fieldSize) <= 0) {
+            fieldSizeError.textContent = 'Field size must be greater than 0';
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+    
     // Add field button
     addFieldBtn.addEventListener('click', () => {
+        if (!validateFieldInput()) {
+            return;
+        }
+        
         const fieldName = document.getElementById('field-name').value.trim();
         const fieldSize = document.getElementById('field-size').value;
         const soilType = document.getElementById('soil-type').value;
-        
-        if (!fieldName || !fieldSize) {
-            alert('Please enter field name and size.');
-            return;
-        }
         
         // Create a field object
         const field = {
@@ -199,8 +502,88 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('field-name').value = '';
         document.getElementById('field-size').value = '';
         
-        alert(`Field "${fieldName}" (${fieldSize} acres) added successfully!`);
+        // Update UI to show the field was added
+        showFieldAddedMessage(fieldName);
+        
+        // Suggest rotation based on soil type
+        if (confirm(`Would you like to apply the suggested rotation for ${soilType} soil?`)) {
+            applySuggestedRotation(soilType);
+        }
     });
+    
+    // Function to show field added message
+    function showFieldAddedMessage(fieldName) {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message success';
+        messageElement.innerHTML = `<i class="fas fa-check-circle"></i> Field "${fieldName}" added successfully!`;
+        
+        const fieldInfo = document.querySelector('.field-info');
+        fieldInfo.appendChild(messageElement);
+        
+        // Remove message after 3 seconds
+        setTimeout(() => {
+            messageElement.remove();
+        }, 3000);
+        
+        // Update the saved fields display
+        displaySavedFields();
+    }
+    
+    // Function to display saved fields
+    function displaySavedFields() {
+        const fieldsContainer = document.getElementById('saved-fields-container');
+        const savedFields = JSON.parse(localStorage.getItem('crop_planner_fields') || '[]');
+        
+        if (savedFields.length === 0) {
+            fieldsContainer.innerHTML = '<p class="no-fields-message">No fields added yet.</p>';
+            return;
+        }
+        
+        // Clear container
+        fieldsContainer.innerHTML = '';
+        
+        // Add each field
+        savedFields.forEach((field, index) => {
+            const fieldItem = document.createElement('div');
+            fieldItem.className = 'field-item';
+            
+            const fieldDate = new Date(field.date);
+            const formattedDate = `${fieldDate.getMonth() + 1}/${fieldDate.getDate()}/${fieldDate.getFullYear()}`;
+            
+            fieldItem.innerHTML = `
+                <div class="field-item-details">
+                    <div class="field-name">${field.name} (${field.size} acres)</div>
+                    <div class="field-meta">Soil type: ${field.soil}</div>
+                </div>
+                <div class="field-actions">
+                    <button class="use-field-btn" title="Use this field" data-index="${index}">
+                        <i class="fas fa-arrow-right"></i> Use
+                    </button>
+                    <button class="delete-field-btn" title="Delete this field" data-index="${index}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            
+            fieldsContainer.appendChild(fieldItem);
+        });
+        
+        // Add event listeners to use field buttons
+        document.querySelectorAll('.use-field-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index);
+                useField(index);
+            });
+        });
+        
+        // Add event listeners to delete field buttons
+        document.querySelectorAll('.delete-field-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index);
+                deleteField(index);
+            });
+        });
+    }
     
     // Add event listeners to all crop selects
     document.querySelectorAll('.crop-select').forEach(select => {
@@ -248,243 +631,302 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update color based on score
         if (compatibilityScore < 50) {
             scoreFill.style.backgroundColor = 'var(--accent-red)';
-            scoreValue.style.color = 'var(--accent-red)';
         } else if (compatibilityScore < 75) {
             scoreFill.style.backgroundColor = 'var(--accent-yellow)';
-            scoreValue.style.color = 'var(--accent-yellow)';
         } else {
             scoreFill.style.backgroundColor = 'var(--accent-green)';
-            scoreValue.style.color = 'var(--accent-green)';
         }
         
         // Generate suggestions
-        const suggestions = generateSuggestions(selectedCrops);
-        const suggestionsList = document.getElementById('suggestions-list');
-        suggestionsList.innerHTML = '';
-        
-        suggestions.forEach(suggestion => {
-            const li = document.createElement('li');
-            li.textContent = suggestion;
-            suggestionsList.appendChild(li);
-        });
+        generateSuggestions(selectedCrops);
         
         // Update nutrient chart
         updateNutrientChart(selectedCrops);
     }
     
-    // Calculate compatibility score
+    // Calculate compatibility score based on crop succession
     function calculateCompatibilityScore(crops) {
-        if (crops.length <= 1) return 100; // Single crop is always 100% compatible
+        if (crops.length <= 1) return 100; // Only one crop is always compatible
         
-        let totalCompatibility = 0;
-        let comparisons = 0;
+        let successionsChecked = 0;
+        let goodSuccessions = 0;
         
-        // Check crop rotation order
+        // Check each crop against the next year's crops in the same season
         for (let i = 0; i < crops.length; i++) {
             for (let j = 0; j < crops.length; j++) {
-                if (i !== j) {
-                    const crop1 = crops[i];
-                    const crop2 = crops[j];
-                    
-                    // Check if crops are in sequential years or seasons
-                    const isSequential = (crop1.year === crop2.year - 1) || 
-                                        (crop1.year === crop2.year && 
-                                        ['spring', 'summer', 'fall', 'winter'].indexOf(crop1.season) === 
-                                        ['spring', 'summer', 'fall', 'winter'].indexOf(crop2.season) - 1);
-                    
-                    if (isSequential) {
-                        // Check if crop2 is good to follow crop1
-                        const compatibility = isGoodSuccession(crop1.type, crop2.type) ? 1 : 0;
-                        totalCompatibility += compatibility;
-                        comparisons++;
+                if (crops[i].year < crops[j].year && crops[i].season === crops[j].season) {
+                    successionsChecked++;
+                    if (isGoodSuccession(crops[i].type, crops[j].type)) {
+                        goodSuccessions++;
                     }
                 }
             }
         }
         
-        // Calculate final score
-        return comparisons > 0 ? Math.round((totalCompatibility / comparisons) * 100) : 100;
+        return successionsChecked > 0 
+            ? Math.round((goodSuccessions / successionsChecked) * 100) 
+            : 100;
     }
     
-    // Check if crop2 is good to follow crop1
+    // Check if crop succession is good
     function isGoodSuccession(crop1Type, crop2Type) {
-        if (!crop1Type || !crop2Type) return true; // Skip if type unknown
-        
-        return cropCompatibility[crop1Type]?.before.includes(crop2Type) || false;
+        return cropCompatibility[crop1Type]?.before.includes(crop2Type) || 
+               cropCompatibility[crop2Type]?.after.includes(crop1Type);
     }
     
-    // Generate suggestions
+    // Generate suggestions for crop rotation
     function generateSuggestions(crops) {
-        const suggestions = [];
+        const suggestionsList = document.getElementById('suggestions-list');
+        suggestionsList.innerHTML = '';
         
-        // Check for missing crop types
-        const usedTypes = new Set(crops.map(c => c.type).filter(t => t));
-        const allTypes = new Set(Object.keys(cropGroups));
-        const missingTypes = [...allTypes].filter(type => !usedTypes.has(type));
-        
-        if (missingTypes.length > 0) {
-            suggestions.push(`Consider adding ${missingTypes.join(', ')} crops to your rotation for a more diverse plan.`);
+        if (crops.length === 0) {
+            const listItem = document.createElement('li');
+            listItem.textContent = 'Start by selecting crops for your rotation plan.';
+            suggestionsList.appendChild(listItem);
+            return;
         }
         
-        // Check for crop succession issues
+        // Check for empty seasons
+        const seasons = ['spring', 'summer', 'fall', 'winter'];
+        const missingSeasons = [];
+        
+        for (let year = 1; year <= yearCount; year++) {
+            for (const season of seasons) {
+                const hasCrop = crops.some(crop => crop.year === year && crop.season === season);
+                if (!hasCrop && (season !== 'winter' || year < 3)) { // Winter is optional for later years
+                    missingSeasons.push({ year, season });
+                }
+            }
+        }
+        
+        if (missingSeasons.length > 0) {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = '<span class="suggestion-highlight">Fill empty seasons:</span> '
+                + missingSeasons.slice(0, 3).map(s => `Year ${s.year} ${capitalize(s.season)}`).join(', ')
+                + (missingSeasons.length > 3 ? ` and ${missingSeasons.length - 3} more...` : '');
+            suggestionsList.appendChild(listItem);
+        }
+        
+        // Check for bad successions
+        const badSuccessions = [];
         for (let i = 0; i < crops.length; i++) {
             for (let j = 0; j < crops.length; j++) {
-                if (i !== j) {
-                    const crop1 = crops[i];
-                    const crop2 = crops[j];
-                    
-                    // Check if crops are in sequential years or seasons
-                    const isSequential = (crop1.year === crop2.year - 1) || 
-                                        (crop1.year === crop2.year && 
-                                        ['spring', 'summer', 'fall', 'winter'].indexOf(crop1.season) === 
-                                        ['spring', 'summer', 'fall', 'winter'].indexOf(crop2.season) - 1);
-                    
-                    if (isSequential && !isGoodSuccession(crop1.type, crop2.type)) {
-                        suggestions.push(`${capitalize(crop2.crop)} after ${crop1.crop} may not be ideal. Consider a different crop sequence.`);
-                    }
+                if (crops[i].year < crops[j].year && 
+                    crops[i].season === crops[j].season && 
+                    !isGoodSuccession(crops[i].type, crops[j].type)) {
+                    badSuccessions.push({
+                        year1: crops[i].year,
+                        year2: crops[j].year,
+                        season: crops[i].season,
+                        crop1: crops[i].crop,
+                        crop2: crops[j].crop
+                    });
                 }
+            }
+        }
+        
+        if (badSuccessions.length > 0) {
+            for (const succ of badSuccessions.slice(0, 2)) {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `<span class="suggestion-highlight">Avoid succession:</span> `
+                    + `${capitalize(succ.crop1)} (Year ${succ.year1}) followed by `
+                    + `${capitalize(succ.crop2)} (Year ${succ.year2}) in ${capitalize(succ.season)}`;
+                suggestionsList.appendChild(listItem);
+            }
+            if (badSuccessions.length > 2) {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${badSuccessions.length - 2} more incompatible successions detected.`;
+                suggestionsList.appendChild(listItem);
             }
         }
         
         // Add general suggestions
-        if (crops.length < 4) {
-            suggestions.push('Add more crops to your rotation plan to get better recommendations.');
+        if (crops.length > 0) {
+            // Check for crop diversity
+            const uniqueCropTypes = new Set(crops.map(c => c.type));
+            if (uniqueCropTypes.size < 3 && crops.length >= 4) {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = '<span class="suggestion-highlight">Increase diversity:</span> Try to include at least 3-4 different crop families in your rotation.';
+                suggestionsList.appendChild(listItem);
+            }
+            
+            // Check for legumes
+            const hasLegumes = crops.some(crop => crop.type === 'legumes');
+            if (!hasLegumes) {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = '<span class="suggestion-highlight">Add nitrogen fixers:</span> Include legumes (peas, beans, lentils) in your rotation to improve soil fertility.';
+                suggestionsList.appendChild(listItem);
+            }
         }
         
-        if (suggestions.length === 0) {
-            suggestions.push('Your crop rotation plan looks good! The selected crop sequence supports good soil health and pest management.');
+        if (suggestionsList.children.length === 0) {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = '<span class="suggestion-highlight">Great plan!</span> Your crop rotation looks well balanced.';
+            suggestionsList.appendChild(listItem);
         }
-        
-        return suggestions;
     }
     
-    // Update nutrient chart
+    // Update nutrient chart based on selected crops
     function updateNutrientChart(crops) {
+        // Get average nutrient values for the selected crops by year
+        const yearNutrients = {};
+        const years = [...new Set(crops.map(c => c.year))].sort((a, b) => a - b);
+        
+        for (const year of years) {
+            const yearCrops = crops.filter(c => c.year === year);
+            yearNutrients[year] = {
+                nitrogen: 0,
+                phosphorus: 0,
+                potassium: 0
+            };
+            
+            for (const crop of yearCrops) {
+                if (crop.type && cropCompatibility[crop.type]) {
+                    yearNutrients[year].nitrogen += cropCompatibility[crop.type].nutrients.nitrogen;
+                    yearNutrients[year].phosphorus += cropCompatibility[crop.type].nutrients.phosphorus;
+                    yearNutrients[year].potassium += cropCompatibility[crop.type].nutrients.potassium;
+                }
+            }
+            
+            // Average values if there are crops
+            if (yearCrops.length > 0) {
+                yearNutrients[year].nitrogen = Math.round(yearNutrients[year].nitrogen / yearCrops.length);
+                yearNutrients[year].phosphorus = Math.round(yearNutrients[year].phosphorus / yearCrops.length);
+                yearNutrients[year].potassium = Math.round(yearNutrients[year].potassium / yearCrops.length);
+            }
+        }
+        
+        // Chart data preparation
+        const labels = years.map(y => `Year ${y}`);
+        const nitrogenData = years.map(y => yearNutrients[y].nitrogen);
+        const phosphorusData = years.map(y => yearNutrients[y].phosphorus);
+        const potassiumData = years.map(y => yearNutrients[y].potassium);
+        
+        // Get the canvas element
         const ctx = document.getElementById('nutrientChart').getContext('2d');
         
-        // Calculate average nutrients by year
-        const yearlyNutrients = {};
-        
-        crops.forEach(crop => {
-            if (!crop.type) return;
-            
-            if (!yearlyNutrients[crop.year]) {
-                yearlyNutrients[crop.year] = { 
-                    nitrogen: 0, 
-                    phosphorus: 0, 
-                    potassium: 0,
-                    count: 0
-                };
-            }
-            
-            const nutrients = cropCompatibility[crop.type].nutrients;
-            yearlyNutrients[crop.year].nitrogen += nutrients.nitrogen;
-            yearlyNutrients[crop.year].phosphorus += nutrients.phosphorus;
-            yearlyNutrients[crop.year].potassium += nutrients.potassium;
-            yearlyNutrients[crop.year].count++;
-        });
-        
-        // Average the values
-        const years = Object.keys(yearlyNutrients).sort();
-        const nitrogenData = [];
-        const phosphorusData = [];
-        const potassiumData = [];
-        
-        years.forEach(year => {
-            const count = yearlyNutrients[year].count || 1;
-            nitrogenData.push(yearlyNutrients[year].nitrogen / count);
-            phosphorusData.push(yearlyNutrients[year].phosphorus / count);
-            potassiumData.push(yearlyNutrients[year].potassium / count);
-        });
-        
-        // Create or update chart
+        // Destroy existing chart if it exists
         if (window.nutrientChart) {
-            window.nutrientChart.data.labels = years.map(y => `Year ${y}`);
-            window.nutrientChart.data.datasets[0].data = nitrogenData;
-            window.nutrientChart.data.datasets[1].data = phosphorusData;
-            window.nutrientChart.data.datasets[2].data = potassiumData;
-            window.nutrientChart.update();
-        } else {
-            window.nutrientChart = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: years.map(y => `Year ${y}`),
-                    datasets: [
-                        {
-                            label: 'Nitrogen',
-                            data: nitrogenData,
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Phosphorus',
-                            data: phosphorusData,
-                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Potassium',
-                            data: potassiumData,
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    scales: {
-                        r: {
-                            angleLines: {
-                                display: true
-                            },
-                            suggestedMin: 0,
-                            suggestedMax: 5
-                        }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
+            window.nutrientChart.destroy();
         }
+        
+        // Create the chart
+        window.nutrientChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Nitrogen (N)', 'Phosphorus (P)', 'Potassium (K)'],
+                datasets: years.map((year, index) => ({
+                    label: `Year ${year}`,
+                    data: [
+                        yearNutrients[year].nitrogen,
+                        yearNutrients[year].phosphorus,
+                        yearNutrients[year].potassium
+                    ],
+                    backgroundColor: `rgba(${70 + index * 50}, ${120 + index * 30}, ${200 - index * 30}, 0.2)`,
+                    borderColor: `rgba(${70 + index * 50}, ${120 + index * 30}, ${200 - index * 30}, 1)`,
+                    borderWidth: 2,
+                    pointBackgroundColor: `rgba(${70 + index * 50}, ${120 + index * 30}, ${200 - index * 30}, 1)`
+                }))
+            },
+            options: {
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 5,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.raw || 0;
+                                const maxValue = 5;
+                                return `${label}: ${value}/${maxValue}`;
+                            }
+                        }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
     }
     
-    // Save plan button
+    // Save button event listener
     saveBtn.addEventListener('click', () => {
-        const planName = prompt('Enter a name for this plan:', 'Rotation Plan ' + new Date().toLocaleDateString());
+        const fieldName = document.getElementById('field-name').value.trim();
+        if (!fieldName) {
+            alert('Please enter a field name before saving the plan.');
+            return;
+        }
         
-        if (!planName) return; // User cancelled
-        
-        // Collect all crop selections
-        const planData = {
-            name: planName,
-            date: new Date(),
-            years: {},
-        };
-        
-        document.querySelectorAll('.season-slot').forEach(slot => {
-            const year = slot.dataset.year;
-            const season = slot.dataset.season;
-            const cropSelect = slot.querySelector('.crop-select');
-            const crop = cropSelect ? cropSelect.value : '';
-            
-            if (!planData.years[year]) {
-                planData.years[year] = {};
+        const selectedCrops = [];
+        document.querySelectorAll('.crop-select').forEach(select => {
+            if (select.value) {
+                const year = parseInt(select.closest('.season-slot').dataset.year);
+                const season = select.closest('.season-slot').dataset.season;
+                selectedCrops.push({
+                    crop: select.value,
+                    type: getCropType(select.value),
+                    year: year,
+                    season: season
+                });
             }
-            
-            planData.years[year][season] = crop;
         });
+        
+        if (selectedCrops.length === 0) {
+            alert('Please select at least one crop before saving the plan.');
+            return;
+        }
+        
+        const plan = {
+            id: Date.now(),
+            date: new Date(),
+            fieldName: fieldName,
+            fieldSize: document.getElementById('field-size').value,
+            soilType: document.getElementById('soil-type').value,
+            crops: selectedCrops,
+            years: yearCount
+        };
         
         // Save to local storage
         const savedPlans = JSON.parse(localStorage.getItem('crop_rotation_plans') || '[]');
-        savedPlans.push(planData);
+        savedPlans.push(plan);
         localStorage.setItem('crop_rotation_plans', JSON.stringify(savedPlans));
         
-        // Update saved plans display
-        displaySavedPlans();
-        
         alert('Plan saved successfully!');
+        displaySavedPlans();
+    });
+    
+    // Print button event listener
+    printBtn.addEventListener('click', () => {
+        window.print();
+    });
+    
+    // Export button event listener
+    exportBtn.addEventListener('click', () => {
+        alert('Export functionality will be implemented in the future.');
+    });
+    
+    // Clear button event listener
+    clearBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear the current plan? This cannot be undone.')) {
+            document.querySelectorAll('.crop-select').forEach(select => {
+                select.value = '';
+            });
+            document.getElementById('field-name').value = '';
+            document.getElementById('field-size').value = '';
+            document.getElementById('soil-type').value = 'loamy';
+            document.querySelector('.recommendation-placeholder').style.display = 'block';
+            document.getElementById('recommendation-details').style.display = 'none';
+        }
     });
     
     // Display saved plans
@@ -497,37 +939,50 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // Clear container
         plansContainer.innerHTML = '';
         
+        // Sort plans by date (newest first)
+        savedPlans.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // Add each plan
         savedPlans.forEach((plan, index) => {
             const planCard = document.createElement('div');
             planCard.className = 'plan-card';
             
-            // Count number of crops in plan
-            let cropCount = 0;
-            for (const year in plan.years) {
-                for (const season in plan.years[year]) {
-                    if (plan.years[year][season]) {
-                        cropCount++;
-                    }
+            const planDate = new Date(plan.date);
+            const formattedDate = `${planDate.getMonth() + 1}/${planDate.getDate()}/${planDate.getFullYear()}`;
+            
+            // Create crop summary
+            const cropsByYear = {};
+            plan.crops.forEach(crop => {
+                if (!cropsByYear[crop.year]) {
+                    cropsByYear[crop.year] = [];
                 }
+                cropsByYear[crop.year].push(`${capitalize(crop.season)}: ${capitalize(crop.crop)}`);
+            });
+            
+            let cropSummary = '';
+            for (const [year, crops] of Object.entries(cropsByYear)) {
+                cropSummary += `<div><strong>Year ${year}:</strong> ${crops.join(', ')}</div>`;
             }
             
-            const date = new Date(plan.date);
-            
             planCard.innerHTML = `
-                <div class="plan-title">
-                    ${plan.name}
-                    <button class="delete-plan" data-index="${index}"><i class="fas fa-trash"></i></button>
-                </div>
+                <div class="plan-title">${plan.fieldName} (${plan.fieldSize} acres)</div>
                 <div class="plan-meta">
-                    Created: ${date.toLocaleDateString()}
+                    <span><i class="fas fa-calendar"></i> ${formattedDate}</span>
+                    <span><i class="fas fa-layer-group"></i> ${plan.soilType} soil</span>
                 </div>
                 <div class="plan-preview">
-                    ${Object.keys(plan.years).length} years, ${cropCount} crops
+                    ${cropSummary}
                 </div>
                 <div class="plan-actions">
-                    <button class="btn secondary-btn load-plan" data-index="${index}">Load</button>
+                    <button class="btn small-btn secondary-btn load-btn" data-index="${index}">
+                        <i class="fas fa-folder-open"></i> Load
+                    </button>
+                    <button class="btn small-btn warning-btn delete-btn" data-index="${index}">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
                 </div>
             `;
             
@@ -535,18 +990,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // Add event listeners to load and delete buttons
-        document.querySelectorAll('.load-plan').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const index = parseInt(this.dataset.index);
-                loadPlan(index);
+        document.querySelectorAll('.load-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                loadPlan(parseInt(btn.dataset.index));
             });
         });
         
-        document.querySelectorAll('.delete-plan').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const index = parseInt(this.dataset.index);
-                deletePlan(index);
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                deletePlan(parseInt(btn.dataset.index));
             });
         });
     }
@@ -554,75 +1006,150 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load a saved plan
     function loadPlan(index) {
         const savedPlans = JSON.parse(localStorage.getItem('crop_rotation_plans') || '[]');
-        if (!savedPlans[index]) return;
-        
-        const plan = savedPlans[index];
-        
-        // Clear all current selections
-        document.querySelectorAll('.crop-select').forEach(select => {
-            select.value = '';
-        });
-        
-        // Load plan data
-        for (const year in plan.years) {
-            // Make sure we have enough year tabs
-            while (parseInt(year) > yearCount) {
+        if (index >= 0 && index < savedPlans.length) {
+            const plan = savedPlans[index];
+            
+            // Clear current plan
+            document.querySelectorAll('.crop-select').forEach(select => {
+                select.value = '';
+            });
+            
+            // Set field information
+            document.getElementById('field-name').value = plan.fieldName;
+            document.getElementById('field-size').value = plan.fieldSize;
+            document.getElementById('soil-type').value = plan.soilType;
+            
+            // If plan has more years than current UI, add more years
+            while (yearCount < plan.years) {
                 addYearBtn.click();
             }
             
-            for (const season in plan.years[year]) {
-                const value = plan.years[year][season];
-                const slot = document.querySelector(`.season-slot[data-year="${year}"][data-season="${season}"]`);
-                
-                if (slot) {
-                    const select = slot.querySelector('.crop-select');
-                    if (select) {
-                        select.value = value;
-                    }
+            // Apply crop selections
+            plan.crops.forEach(crop => {
+                const selector = `.season-slot[data-year="${crop.year}"][data-season="${crop.season}"] .crop-select`;
+                const selectElement = document.querySelector(selector);
+                if (selectElement) {
+                    selectElement.value = crop.crop;
                 }
-            }
+            });
+            
+            // Switch to year 1
+            switchYear(1);
+            
+            // Update recommendations
+            updateRecommendations();
+            
+            alert(`Plan "${plan.fieldName}" loaded successfully!`);
         }
-        
-        // Switch to year 1 and update recommendations
-        switchYear(1);
-        updateRecommendations();
-        
-        alert(`Plan "${plan.name}" loaded successfully!`);
     }
     
     // Delete a saved plan
     function deletePlan(index) {
-        if (!confirm('Are you sure you want to delete this plan?')) return;
-        
-        const savedPlans = JSON.parse(localStorage.getItem('crop_rotation_plans') || '[]');
-        if (!savedPlans[index]) return;
-        
-        savedPlans.splice(index, 1);
-        localStorage.setItem('crop_rotation_plans', JSON.stringify(savedPlans));
-        
-        displaySavedPlans();
+        if (confirm('Are you sure you want to delete this plan? This cannot be undone.')) {
+            const savedPlans = JSON.parse(localStorage.getItem('crop_rotation_plans') || '[]');
+            if (index >= 0 && index < savedPlans.length) {
+                savedPlans.splice(index, 1);
+                localStorage.setItem('crop_rotation_plans', JSON.stringify(savedPlans));
+                displaySavedPlans();
+                alert('Plan deleted successfully.');
+            }
+        }
     }
     
-    // Clear plan button
-    clearBtn.addEventListener('click', () => {
-        if (confirm('Are you sure you want to clear all crops from your current plan?')) {
-            document.querySelectorAll('.crop-select').forEach(select => {
-                select.value = '';
-            });
-            updateRecommendations();
-        }
-    });
-    
-    // Print plan button
-    printBtn.addEventListener('click', () => {
-        window.print();
-    });
+    // Initialize the page
+    displaySavedFields();
+    displaySavedPlans();
+    switchYear(1);
     
     // Helper function to capitalize first letter
     function capitalize(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
     
-    // Load saved plans on page load
-    displaySavedPlans();
+    // Add event listener for suggest all seasons button
+    suggestAllSeasonsBtn.addEventListener('click', () => {
+        const seasons = ['spring', 'summer', 'fall', 'winter'];
+        seasons.forEach(season => {
+            suggestSeasonalCrops(season);
+        });
+        
+        // Show a summary message
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message success';
+        messageElement.innerHTML = `<i class="fas fa-check-circle"></i> Applied crop suggestions for all seasons.`;
+        
+        const rotationPlan = document.querySelector('.rotation-plan');
+        rotationPlan.insertBefore(messageElement, rotationPlan.firstChild);
+        
+        // Remove message after 4 seconds
+        setTimeout(() => {
+            messageElement.remove();
+        }, 4000);
+    });
+    
+    // Function to use a saved field for the current plan
+    function useField(index) {
+        const savedFields = JSON.parse(localStorage.getItem('crop_planner_fields') || '[]');
+        if (index >= 0 && index < savedFields.length) {
+            const field = savedFields[index];
+            
+            // Populate field info in the form
+            document.getElementById('field-name').value = field.name;
+            document.getElementById('field-size').value = field.size;
+            document.getElementById('soil-type').value = field.soil;
+            
+            // Show message
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message success';
+            messageElement.innerHTML = `<i class="fas fa-check-circle"></i> Field "${field.name}" loaded. Would you like to see suggested crops for ${field.soil} soil?`;
+            
+            const fieldInfo = document.querySelector('.field-info');
+            fieldInfo.appendChild(messageElement);
+            
+            // Add buttons to the message
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'message-actions';
+            buttonContainer.style.marginTop = '10px';
+            
+            const suggestBtn = document.createElement('button');
+            suggestBtn.className = 'btn primary-btn btn-sm';
+            suggestBtn.innerHTML = '<i class="fas fa-lightbulb"></i> Suggest Rotation';
+            suggestBtn.addEventListener('click', () => {
+                applySuggestedRotation(field.soil);
+                messageElement.remove();
+            });
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn secondary-btn btn-sm';
+            cancelBtn.textContent = 'No Thanks';
+            cancelBtn.style.marginLeft = '10px';
+            cancelBtn.addEventListener('click', () => {
+                messageElement.remove();
+            });
+            
+            buttonContainer.appendChild(suggestBtn);
+            buttonContainer.appendChild(cancelBtn);
+            messageElement.appendChild(buttonContainer);
+            
+            // Remove message after 10 seconds if not interacted with
+            setTimeout(() => {
+                if (document.body.contains(messageElement)) {
+                    messageElement.remove();
+                }
+            }, 10000);
+        }
+    }
+    
+    // Function to delete a saved field
+    function deleteField(index) {
+        if (confirm('Are you sure you want to delete this field? This cannot be undone.')) {
+            const savedFields = JSON.parse(localStorage.getItem('crop_planner_fields') || '[]');
+            if (index >= 0 && index < savedFields.length) {
+                savedFields.splice(index, 1);
+                localStorage.setItem('crop_planner_fields', JSON.stringify(savedFields));
+                displaySavedFields();
+                alert('Field deleted successfully.');
+            }
+        }
+    }
 }); 

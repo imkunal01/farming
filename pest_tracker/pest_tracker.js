@@ -1,585 +1,672 @@
-// Pest & Disease Tracker JavaScript
+/**
+ * Pest & Disease Monitor - Main JavaScript
+ */
 
-document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements
-    const reportForm = document.getElementById('report-form');
-    const useMapBtn = document.getElementById('use-map-btn');
-    const mapModal = document.getElementById('map-modal');
-    const closeMapModal = document.getElementById('close-map-modal');
-    const confirmLocation = document.getElementById('confirm-location');
-    const locationInput = document.getElementById('location');
-    const latitudeInput = document.getElementById('latitude');
-    const longitudeInput = document.getElementById('longitude');
-    const imageUpload = document.getElementById('image-upload');
-    const imagePreview = document.getElementById('image-preview');
-    const searchReports = document.getElementById('search-reports');
-    const filterType = document.getElementById('filter-type');
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const aiSolutionBtn = document.getElementById('ai-solution-btn');
-    const aiSolutionContainer = document.getElementById('ai-solution-container');
-    const aiSolutionContent = document.getElementById('ai-solution-content');
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the pest monitoring dashboard
+    initPestMonitor();
+});
+
+// Global variables
+let map;
+let markers = [];
+let currentReports = [];
+let currentPage = 1;
+let reportsPerPage = 10;
+let sortColumn = 'date';
+let sortDirection = 'desc';
+
+/**
+ * Initialize the pest monitoring system
+ */
+function initPestMonitor() {
+    // Initialize map view (default)
+    initMap();
     
-    // Initialize image storage
-    let uploadedImages = [];
+    // Setup view toggle functionality
+    setupViewToggle();
     
-    // Initialize pest reports storage
-    let pestReports = JSON.parse(localStorage.getItem('pest_reports') || '[]');
+    // Setup form handlers
+    setupFormHandlers();
     
-    // Initialize maps
-    let sightingsMap = null;
-    let locationSelectionMap = null;
-    let currentMarker = null;
+    // Load initial data
+    loadReportData();
     
-    // Initialize charts
-    let trendsChart = null;
+    // Initialize analytics charts (empty for now)
+    initCharts();
     
-    // Set today's date as default
-    document.getElementById('date-observed').valueAsDate = new Date();
+    // Setup modal functionality
+    setupModals();
     
-    // AI Solution Button
-    if (aiSolutionBtn) {
-        aiSolutionBtn.addEventListener('click', getAISolution);
-    }
+    // Setup pagination and table sorting
+    setupTableControls();
     
-    // Tab navigation
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const tabId = button.dataset.tab;
-            
-            // Update active tab button
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            
-            // Show selected tab content
-            tabContents.forEach(content => content.classList.remove('active'));
-            document.getElementById(`${tabId}-tab`).classList.add('active');
-            
-            // Initialize map or chart if necessary
-            if (tabId === 'map' && !sightingsMap) {
-                initSightingsMap();
-            } else if (tabId === 'trends' && !trendsChart) {
-                initTrendsChart();
-            }
-        });
+    // Setup treatment guide search
+    setupTreatmentSearch();
+    
+    // Set current date as default in the date field
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('detection-date').value = today;
+}
+
+/**
+ * Initialize the Leaflet map
+ */
+function initMap() {
+    // Create map centered on a default location (can be adjusted based on user's location)
+    map = L.map('pest-map').setView([37.7749, -122.4194], 10);
+    
+    // Add OpenStreetMap tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Add click event to map for selecting coordinates
+    map.on('click', function(e) {
+        const lat = e.latlng.lat.toFixed(6);
+        const lng = e.latlng.lng.toFixed(6);
+        
+        document.getElementById('location-lat').value = lat;
+        document.getElementById('location-lng').value = lng;
     });
     
-    // Map selection modal
-    useMapBtn.addEventListener('click', openMapModal);
-    closeMapModal.addEventListener('click', closeMapModal);
-    confirmLocation.addEventListener('click', setLocationFromMap);
-    
-    // Image upload handler
-    imageUpload.addEventListener('change', handleImageUpload);
-    
-    // Form submission
-    reportForm.addEventListener('submit', handleFormSubmit);
-    
-    // Search and filter functionality
-    searchReports.addEventListener('input', filterReports);
-    filterType.addEventListener('change', filterReports);
-    
-    // Initialize reports display
-    displayReports();
-    
-    // Initialize maps if needed
-    if (document.getElementById('map-tab').classList.contains('active')) {
-        initSightingsMap();
-    }
-    
-    // Initialize charts if needed
-    if (document.getElementById('trends-tab').classList.contains('active')) {
-        initTrendsChart();
-    }
-    
-    // Function to open map modal
-    function openMapModal() {
-        mapModal.style.display = 'flex';
-        
-        // Initialize map if not already done
-        if (!locationSelectionMap) {
-            locationSelectionMap = L.map('location-map').setView([20, 0], 2);
-            
-            // Add tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(locationSelectionMap);
-            
-            // Map click event
-            locationSelectionMap.on('click', function(e) {
-                setMapMarker(e.latlng.lat, e.latlng.lng);
+    // Get user's current location button
+    document.getElementById('get-location').addEventListener('click', function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const lat = position.coords.latitude.toFixed(6);
+                const lng = position.coords.longitude.toFixed(6);
+                
+                document.getElementById('location-lat').value = lat;
+                document.getElementById('location-lng').value = lng;
+                
+                // Center map on user's location
+                map.setView([lat, lng], 15);
+                
+                // Add a temporary marker
+                L.marker([lat, lng]).addTo(map)
+                    .bindPopup('Your current location')
+                    .openPopup();
+            }, function(error) {
+                showAlert('Could not get your location: ' + error.message, 'error');
             });
-            
-            // Try to get user's location
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        locationSelectionMap.setView([lat, lng], 13);
-                    },
-                    function(error) {
-                        console.error("Error getting location:", error);
-                    }
-                );
-            }
         } else {
-            // Refresh map size
+            showAlert('Geolocation is not supported by your browser', 'error');
+        }
+    });
+}
+
+/**
+ * Setup view toggle between map, table and analytics
+ */
+function setupViewToggle() {
+    const viewButtons = document.querySelectorAll('.view-btn');
+    const viewContents = document.querySelectorAll('.view-content');
+    
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const viewType = this.getAttribute('data-view');
+            
+            // Update active button
+            viewButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show appropriate content
+            viewContents.forEach(content => {
+                if (content.classList.contains(viewType + '-view')) {
+                    content.style.display = 'block';
+                    
+                    // Refresh map if switching to map view
+                    if (viewType === 'map') {
             setTimeout(() => {
-                locationSelectionMap.invalidateSize();
+                            map.invalidateSize();
             }, 100);
         }
-    }
+                } else {
+                    content.style.display = 'none';
+                }
+            });
+        });
+    });
+}
+
+/**
+ * Setup form handlers
+ */
+function setupFormHandlers() {
+    // Pest report form submission
+    const reportForm = document.getElementById('pest-report-form');
     
-    // Function to close map modal
-    function closeMapModal() {
-        mapModal.style.display = 'none';
-    }
-    
-    // Function to set marker on map
-    function setMapMarker(lat, lng) {
-        // Remove existing marker
-        if (currentMarker) {
-            locationSelectionMap.removeLayer(currentMarker);
-        }
-        
-        // Create new marker
-        currentMarker = L.marker([lat, lng]).addTo(locationSelectionMap);
-        
-        // Update hidden inputs
-        latitudeInput.value = lat;
-        longitudeInput.value = lng;
-    }
-    
-    // Function to set location from map
-    function setLocationFromMap() {
-        // Check if marker is set
-        if (!currentMarker) {
-            alert('Please select a location on the map');
-            return;
-        }
-        
-        // Get coordinates from marker
-        const position = currentMarker.getLatLng();
-        
-        // Reverse geocode to get location name (simplified)
-        locationInput.value = `Selected Location (${position.lat.toFixed(6)}, ${position.lng.toFixed(6)})`;
-        
-        // Close modal
-        closeMapModal();
-    }
-    
-    // Function to handle image upload
-    function handleImageUpload(e) {
-        const files = e.target.files;
-        
-        // Clear preview
-        imagePreview.innerHTML = '';
-        uploadedImages = [];
-        
-        // Process each file
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            
-            // Check if image
-            if (!file.type.match('image.*')) {
-                continue;
-            }
-            
-            // Read file
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // Add to uploaded images array
-                uploadedImages.push({
-                    name: file.name,
-                    data: e.target.result
-                });
-                
-                // Create preview element
-                const preview = document.createElement('div');
-                preview.className = 'preview-image';
-                preview.style.backgroundImage = `url(${e.target.result})`;
-                preview.style.backgroundSize = 'cover';
-                preview.style.backgroundPosition = 'center';
-                
-                // Add remove button
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'remove-image';
-                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                removeBtn.dataset.index = uploadedImages.length - 1;
-                removeBtn.addEventListener('click', function() {
-                    const index = parseInt(this.dataset.index);
-                    uploadedImages.splice(index, 1);
-                    this.parentElement.remove();
-                    
-                    // Update indexes of remaining buttons
-                    document.querySelectorAll('.remove-image').forEach((btn, i) => {
-                        btn.dataset.index = i;
-                    });
-                });
-                
-                preview.appendChild(removeBtn);
-                imagePreview.appendChild(preview);
-            };
-            
-            reader.readAsDataURL(file);
-        }
-    }
-    
-    // Function to handle form submission
-    function handleFormSubmit(e) {
+    reportForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // Get form values
-        const pestType = document.getElementById('pest-type').value;
-        const pestName = document.getElementById('pest-name').value;
-        const cropAffected = document.getElementById('crop-affected').value;
-        const severity = document.getElementById('severity').value;
-        const dateObserved = document.getElementById('date-observed').value;
-        const location = document.getElementById('location').value;
-        const symptoms = document.getElementById('symptoms').value;
-        const treatment = document.getElementById('treatment').value;
-        const latitude = document.getElementById('latitude').value;
-        const longitude = document.getElementById('longitude').value;
-        
-        // Validate required fields
-        if (!pestType || !pestName || !cropAffected || !dateObserved || !location) {
-            alert('Please fill all required fields');
-            return;
-        }
-        
-        // Create report object
-        const report = {
-            id: Date.now(),
-            type: pestType,
-            name: pestName,
-            cropAffected: cropAffected,
-            severity: parseInt(severity),
-            dateObserved: dateObserved,
-            location: location,
-            symptoms: symptoms,
-            treatment: treatment,
-            latitude: latitude,
-            longitude: longitude,
-            images: uploadedImages,
-            timestamp: new Date().toISOString()
+        // Collect form data
+        const reportData = {
+            id: generateUniqueId(),
+            reportType: document.getElementById('report-type').value,
+            pestName: document.getElementById('pest-name').value,
+            cropAffected: document.getElementById('crop-affected').value,
+            locationName: document.getElementById('location-name').value,
+            locationLat: document.getElementById('location-lat').value,
+            locationLng: document.getElementById('location-lng').value,
+            severity: document.getElementById('severity').value,
+            areaAffected: document.getElementById('area-affected').value,
+            detectionDate: document.getElementById('detection-date').value,
+            notes: document.getElementById('notes').value,
+            status: 'new',
+            reportDate: new Date().toISOString().split('T')[0]
         };
         
-        // Get category (insect, disease, other)
-        if (pestType.includes('aphids') || pestType.includes('beetles') || 
-            pestType.includes('caterpillars') || pestType.includes('grasshoppers') || 
-            pestType.includes('thrips') || pestType.includes('whiteflies') || 
-            pestType.includes('other_insect')) {
-            report.category = 'insect';
-        } else if (pestType.includes('blight') || pestType.includes('mildew') || 
-                  pestType.includes('rust') || pestType.includes('leaf_spot') || 
-                  pestType.includes('wilt') || pestType.includes('rot') || 
-                  pestType.includes('virus') || pestType.includes('other_disease')) {
-            report.category = 'disease';
-        } else {
-            report.category = 'other';
-        }
-        
-        // Add to reports array
-        pestReports.unshift(report);
-        
-        // Save to localStorage
-        localStorage.setItem('pest_reports', JSON.stringify(pestReports));
-        
-        // Update display
-        displayReports();
+        // For demo purposes, just add to local storage
+        saveReport(reportData);
         
         // Reset form
         reportForm.reset();
-        document.getElementById('date-observed').valueAsDate = new Date();
-        imagePreview.innerHTML = '';
-        uploadedImages = [];
+        
+        // Set current date as default in the date field again
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('detection-date').value = today;
         
         // Show success message
-        alert('Pest report saved successfully!');
+        showAlert('Pest report submitted successfully!', 'success');
+        
+        // Reload data to show new report
+        loadReportData();
+    });
+}
+
+/**
+ * Save report to local storage (for demo purposes)
+ */
+function saveReport(reportData) {
+    // Get existing reports from local storage
+    let reports = JSON.parse(localStorage.getItem('pestReports')) || [];
+    
+    // Add new report
+    reports.push(reportData);
+    
+    // Save back to local storage
+    localStorage.setItem('pestReports', JSON.stringify(reports));
+}
+
+/**
+ * Load report data from local storage (for demo)
+ */
+function loadReportData() {
+    // Get reports from local storage
+    const reports = JSON.parse(localStorage.getItem('pestReports')) || [];
+    
+    // If no reports exist yet, create some demo data
+    if (reports.length === 0) {
+        createDemoReports();
+        return loadReportData(); // Reload after creating demo data
     }
     
-    // Function to display reports
-    function displayReports() {
-        const reportsContainer = document.getElementById('reports-container');
-        
-        // Check if there are reports
-        if (pestReports.length === 0) {
-            reportsContainer.innerHTML = '<p class="no-data-message">No pest reports yet. Use the form to report your first sighting.</p>';
-            return;
+    // Store current reports
+    currentReports = reports;
+    
+    // Update map markers
+    updateMapMarkers(reports);
+    
+    // Update table view
+    updateTableView(reports);
+    
+    // Update analytics charts
+    updateCharts(reports);
+    
+    // Update alerts sidebar
+    updateAlerts(reports);
+}
+
+/**
+ * Create demo reports for initial viewing
+ */
+function createDemoReports() {
+    const demoReports = [
+        {
+            id: 'demo-1',
+            reportType: 'insect',
+            pestName: 'Aphids',
+            cropAffected: 'Corn',
+            locationName: 'North Field',
+            locationLat: '37.7749',
+            locationLng: '-122.4294',
+            severity: 'medium',
+            areaAffected: '5.2',
+            detectionDate: '2023-06-15',
+            notes: 'Found clusters on young plants. Some leaf curling observed.',
+            status: 'treating',
+            reportDate: '2023-06-15'
+        },
+        {
+            id: 'demo-2',
+            reportType: 'disease',
+            pestName: 'Powdery Mildew',
+            cropAffected: 'Wheat',
+            locationName: 'East Field',
+            locationLat: '37.7649',
+            locationLng: '-122.4194',
+            severity: 'high',
+            areaAffected: '10.5',
+            detectionDate: '2023-06-10',
+            notes: 'White powdery spots on leaves and stems. Spreading rapidly in humid conditions.',
+            status: 'investigating',
+            reportDate: '2023-06-10'
+        },
+        {
+            id: 'demo-3',
+            reportType: 'weed',
+            pestName: 'Bindweed',
+            cropAffected: 'Soybean',
+            locationName: 'South Field',
+            locationLat: '37.7649',
+            locationLng: '-122.4094',
+            severity: 'low',
+            areaAffected: '2.3',
+            detectionDate: '2023-06-05',
+            notes: 'Climbing vines beginning to emerge at field edges.',
+            status: 'monitoring',
+            reportDate: '2023-06-05'
+        },
+        {
+            id: 'demo-4',
+            reportType: 'disease',
+            pestName: 'Late Blight',
+            cropAffected: 'Potato',
+            locationName: 'West Field',
+            locationLat: '37.7849',
+            locationLng: '-122.4394',
+            severity: 'critical',
+            areaAffected: '8.7',
+            detectionDate: '2023-06-02',
+            notes: 'Dark water-soaked spots on leaves. Some tubers showing brown rot.',
+            status: 'treating',
+            reportDate: '2023-06-02'
         }
+    ];
+    
+    // Save demo reports to local storage
+    localStorage.setItem('pestReports', JSON.stringify(demoReports));
+}
+
+/**
+ * Update map markers based on report data
+ */
+function updateMapMarkers(reports) {
+    // Clear existing markers
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
+    
+    // Add new markers
+    reports.forEach(report => {
+        // Skip if missing coordinates
+        if (!report.locationLat || !report.locationLng) return;
         
-        // Clear container
-        reportsContainer.innerHTML = '';
+        // Create marker with custom color based on severity
+        const markerIcon = createSeverityMarker(report.severity);
         
-        // Filter reports if needed
-        const searchTerm = searchReports.value.toLowerCase();
-        const filterValue = filterType.value;
+        const marker = L.marker([report.locationLat, report.locationLng], {icon: markerIcon}).addTo(map);
         
-        // Apply filters
-        const filteredReports = pestReports.filter(report => {
-            // Text search
-            const matchesSearch = searchTerm === '' || 
-                report.name.toLowerCase().includes(searchTerm) || 
-                report.cropAffected.toLowerCase().includes(searchTerm) || 
-                report.location.toLowerCase().includes(searchTerm);
-            
-            // Type filter
-            const matchesType = filterValue === 'all' || report.category === filterValue;
-            
-            return matchesSearch && matchesType;
+        // Create popup content
+        const popupContent = `
+            <div class="map-popup">
+                <h4>${report.pestName}</h4>
+                <p><strong>Location:</strong> ${report.locationName}</p>
+                <p><strong>Crop:</strong> ${report.cropAffected}</p>
+                <p><strong>Severity:</strong> <span class="severity-label severity-${report.severity}">${capitalizeFirst(report.severity)}</span></p>
+                <p><strong>Status:</strong> <span class="status-label status-${report.status}">${formatStatus(report.status)}</span></p>
+                <p><strong>Detected:</strong> ${formatDate(report.detectionDate)}</p>
+                <button class="btn primary-btn btn-sm view-details-btn" data-report-id="${report.id}">View Details</button>
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        
+        // Add click event for details button within popup
+        marker.on('popupopen', function() {
+            const detailsBtn = document.querySelector(`.view-details-btn[data-report-id="${report.id}"]`);
+            if (detailsBtn) {
+                detailsBtn.addEventListener('click', function() {
+                    openReportDetailModal(report.id);
+                });
+            }
         });
         
-        // Check if there are filtered reports
-        if (filteredReports.length === 0) {
-            reportsContainer.innerHTML = '<p class="no-data-message">No reports match your filter criteria.</p>';
-            return;
-        }
-        
-        // Create report cards
-        filteredReports.forEach(report => {
-            const reportCard = document.createElement('div');
-            reportCard.className = 'report-card';
-            
-            // Format date
-            const reportDate = new Date(report.dateObserved);
-            const formattedDate = reportDate.toLocaleDateString();
-            
-            // Get severity class
-            let severityClass = '';
-            let severityText = '';
-            
-            if (report.severity <= 2) {
-                severityClass = 'severity-low';
-                severityText = 'Low';
-            } else if (report.severity <= 4) {
-                severityClass = 'severity-medium';
-                severityText = 'Medium';
+        markers.push(marker);
+    });
+    
+    // If there are markers, fit the map to show all markers
+    if (markers.length > 0) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+}
+
+/**
+ * Create a custom marker icon based on severity level
+ */
+function createSeverityMarker(severity) {
+    let color;
+    
+    switch (severity) {
+        case 'low':
+            color = '#27ae60'; // Green
+            break;
+        case 'medium':
+            color = '#f39c12'; // Orange
+            break;
+        case 'high':
+            color = '#e74c3c'; // Red
+            break;
+        case 'critical':
+            color = '#8e44ad'; // Purple
+            break;
+        default:
+            color = '#3498db'; // Blue
+    }
+    
+    return L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white;"></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, -12]
+    });
+}
+
+/**
+ * Update table view with report data
+ */
+function updateTableView(reports) {
+    // Apply any filters
+    let filteredReports = applyFilters(reports);
+    
+    // Apply sorting
+    filteredReports = applySorting(filteredReports);
+    
+    // Apply pagination
+    const totalPages = Math.ceil(filteredReports.length / reportsPerPage);
+    const start = (currentPage - 1) * reportsPerPage;
+    const end = start + reportsPerPage;
+    const paginatedReports = filteredReports.slice(start, end);
+    
+    // Update table body
+    const tableBody = document.getElementById('reports-table-body');
+    tableBody.innerHTML = '';
+    
+    if (paginatedReports.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = '<td colspan="7" class="text-center">No reports found</td>';
+        tableBody.appendChild(emptyRow);
             } else {
-                severityClass = 'severity-high';
-                severityText = 'High';
-            }
+        paginatedReports.forEach(report => {
+            const row = document.createElement('tr');
             
-            // Get category icon
-            let categoryIcon = '';
-            if (report.category === 'insect') {
-                categoryIcon = '<i class="fas fa-bug"></i>';
-            } else if (report.category === 'disease') {
-                categoryIcon = '<i class="fas fa-virus"></i>';
-            } else {
-                categoryIcon = '<i class="fas fa-exclamation-circle"></i>';
-            }
-            
-            reportCard.innerHTML = `
-                <div class="report-header">
-                    <div>
-                        <div class="report-title">${categoryIcon} ${report.name}</div>
-                        <div class="report-meta">
-                            <span class="meta-item"><i class="fas fa-calendar"></i> ${formattedDate}</span>
-                            <span class="meta-item"><i class="fas fa-seedling"></i> ${report.cropAffected}</span>
-                            <span class="meta-item"><i class="fas fa-map-marker-alt"></i> ${report.location}</span>
-                        </div>
-                    </div>
-                    <span class="severity-badge ${severityClass}">${severityText} Severity</span>
-                </div>
-                <div class="report-content">
-                    ${report.symptoms ? `<p><strong>Symptoms:</strong> ${report.symptoms}</p>` : ''}
-                    ${report.treatment ? `<p><strong>Treatment:</strong> ${report.treatment}</p>` : ''}
-                </div>
+            row.innerHTML = `
+                <td>${formatDate(report.detectionDate)}</td>
+                <td>${report.locationName}</td>
+                <td>${report.pestName}</td>
+                <td>${report.cropAffected}</td>
+                <td><span class="severity-label severity-${report.severity}">${capitalizeFirst(report.severity)}</span></td>
+                <td><span class="status-label status-${report.status}">${formatStatus(report.status)}</span></td>
+                <td>
+                    <button class="btn primary-btn btn-sm view-details-btn" data-report-id="${report.id}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
             `;
             
-            // Add images if any
-            if (report.images && report.images.length > 0) {
-                const imagesContainer = document.createElement('div');
-                imagesContainer.className = 'report-images';
-                
-                report.images.forEach(image => {
-                    const img = document.createElement('img');
-                    img.src = image.data;
-                    img.className = 'report-image';
-                    img.alt = 'Pest image';
-                    img.addEventListener('click', function() {
-                        // Open larger image view (could be implemented as a modal)
-                        window.open(image.data, '_blank');
-                    });
-                    
-                    imagesContainer.appendChild(img);
-                });
-                
-                reportCard.appendChild(imagesContainer);
+            tableBody.appendChild(row);
+        });
+        
+        // Add event listeners to detail buttons
+        document.querySelectorAll('.view-details-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const reportId = this.getAttribute('data-report-id');
+                openReportDetailModal(reportId);
+            });
+        });
+    }
+    
+    // Update pagination controls
+    updatePagination(totalPages);
+}
+
+/**
+ * Apply filters to reports data
+ */
+function applyFilters(reports) {
+    const typeFilter = document.getElementById('filter-pest-type').value;
+    const cropFilter = document.getElementById('filter-crop').value;
+    const severityFilter = document.getElementById('filter-severity').value;
+    const searchTerm = document.getElementById('report-search').value.toLowerCase();
+    
+    return reports.filter(report => {
+        // Apply pest type filter
+        if (typeFilter && report.reportType !== typeFilter) return false;
+        
+        // Apply crop filter
+        if (cropFilter && !report.cropAffected.toLowerCase().includes(cropFilter.toLowerCase())) return false;
+        
+        // Apply severity filter
+        if (severityFilter && report.severity !== severityFilter) return false;
+        
+        // Apply search term
+        if (searchTerm) {
+            const searchFields = [
+                report.pestName,
+                report.cropAffected,
+                report.locationName,
+                report.notes
+            ].map(field => (field || '').toLowerCase());
+            
+            return searchFields.some(field => field.includes(searchTerm));
+        }
+        
+        return true;
+    });
+}
+
+/**
+ * Apply sorting to reports data
+ */
+function applySorting(reports) {
+    return [...reports].sort((a, b) => {
+        let compareValueA, compareValueB;
+        
+        // Determine values to compare based on sort column
+        switch (sortColumn) {
+            case 'date':
+                compareValueA = new Date(a.detectionDate);
+                compareValueB = new Date(b.detectionDate);
+                break;
+            case 'location':
+                compareValueA = a.locationName.toLowerCase();
+                compareValueB = b.locationName.toLowerCase();
+                break;
+            case 'pest':
+                compareValueA = a.pestName.toLowerCase();
+                compareValueB = b.pestName.toLowerCase();
+                break;
+            case 'crop':
+                compareValueA = a.cropAffected.toLowerCase();
+                compareValueB = b.cropAffected.toLowerCase();
+                break;
+            case 'severity':
+                // Severity order: critical > high > medium > low
+                const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+                compareValueA = severityOrder[a.severity] || 0;
+                compareValueB = severityOrder[b.severity] || 0;
+                break;
+            case 'status':
+                compareValueA = a.status.toLowerCase();
+                compareValueB = b.status.toLowerCase();
+                break;
+            default:
+                compareValueA = a[sortColumn];
+                compareValueB = b[sortColumn];
+        }
+        
+        // Apply sort direction
+        let result = 0;
+        if (compareValueA < compareValueB) result = -1;
+        if (compareValueA > compareValueB) result = 1;
+        
+        return sortDirection === 'asc' ? result : -result;
+    });
+}
+
+/**
+ * Update pagination controls
+ */
+function updatePagination(totalPages) {
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    const pageInfo = document.getElementById('page-info');
+    
+    // Update page info text
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+    
+    // Update button states
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
+    
+    // Add event listeners
+    prevBtn.onclick = function() {
+        if (currentPage > 1) {
+            currentPage--;
+            updateTableView(currentReports);
+        }
+    };
+    
+    nextBtn.onclick = function() {
+        if (currentPage < totalPages) {
+            currentPage++;
+            updateTableView(currentReports);
+        }
+    };
+}
+
+/**
+ * Set up table controls (sorting, filtering, search)
+ */
+function setupTableControls() {
+    // Setup column sorting
+    const sortableHeaders = document.querySelectorAll('.reports-table th');
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const column = this.textContent.trim().toLowerCase().split(' ')[0];
+            
+            // Toggle sort direction if same column
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
             }
             
-            // Add action buttons
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'report-actions';
+            // Update table
+            updateTableView(currentReports);
             
-            // Edit button
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn secondary-btn btn-sm';
-            editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
-            editBtn.addEventListener('click', function() {
-                // Edit functionality (could be implemented)
-                alert('Edit functionality not implemented in this demo');
+            // Update sort icons (you could add this feature)
+        });
+    });
+    
+    // Setup filters
+    const filters = [
+        document.getElementById('filter-pest-type'),
+        document.getElementById('filter-crop'),
+        document.getElementById('filter-severity')
+    ];
+    
+    filters.forEach(filter => {
+        if (filter) {
+            filter.addEventListener('change', function() {
+                currentPage = 1; // Reset to first page
+                updateTableView(currentReports);
             });
-            
-            // Delete button
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn warning-btn btn-sm';
-            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
-            deleteBtn.addEventListener('click', function() {
-                if (confirm('Are you sure you want to delete this report?')) {
-                    deleteReport(report.id);
+        }
+    });
+    
+    // Setup search
+    const searchInput = document.getElementById('report-search');
+    const searchButton = searchInput.nextElementSibling;
+    
+    const performSearch = function() {
+        currentPage = 1; // Reset to first page
+        updateTableView(currentReports);
+    };
+    
+    searchButton.addEventListener('click', performSearch);
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+}
+
+/**
+ * Initialize chart.js charts for analytics view
+ */
+function initCharts() {
+    // Pest Type Distribution Chart
+    const pestTypeCtx = document.getElementById('pestTypeChart').getContext('2d');
+    window.pestTypeChart = new Chart(pestTypeCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Insects', 'Diseases', 'Weeds', 'Rodents', 'Other'],
+            datasets: [{
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: [
+                    '#3498db',
+                    '#e74c3c',
+                    '#2ecc71',
+                    '#f39c12',
+                    '#9b59b6'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
                 }
-            });
-            
-            actionsDiv.appendChild(editBtn);
-            actionsDiv.appendChild(deleteBtn);
-            
-            reportCard.appendChild(actionsDiv);
-            reportsContainer.appendChild(reportCard);
-        });
-        
-        // Update map and charts
-        if (sightingsMap) {
-            updateSightingsMap();
-        }
-        
-        if (trendsChart) {
-            updateTrendsChart();
-        }
-    }
-    
-    // Function to filter reports
-    function filterReports() {
-        displayReports();
-    }
-    
-    // Function to delete report
-    function deleteReport(id) {
-        // Find report index
-        const index = pestReports.findIndex(report => report.id === id);
-        
-        // Remove report
-        if (index !== -1) {
-            pestReports.splice(index, 1);
-            
-            // Save to localStorage
-            localStorage.setItem('pest_reports', JSON.stringify(pestReports));
-            
-            // Update display
-            displayReports();
-        }
-    }
-    
-    // Function to initialize sightings map
-    function initSightingsMap() {
-        // Create map
-        sightingsMap = L.map('sightings-map').setView([20, 0], 2);
-        
-        // Add tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(sightingsMap);
-        
-        // Update map with markers
-        updateSightingsMap();
-    }
-    
-    // Function to update sightings map
-    function updateSightingsMap() {
-        // Check if map exists
-        if (!sightingsMap) return;
-        
-        // Clear existing markers
-        sightingsMap.eachLayer(layer => {
-            if (layer instanceof L.Marker) {
-                sightingsMap.removeLayer(layer);
             }
-        });
-        
-        // Add markers for reports with location data
-        const reportsWithLocation = pestReports.filter(report => report.latitude && report.longitude);
-        
-        // Check if there are reports with location
-        if (reportsWithLocation.length === 0) {
-            return;
         }
-        
-        // Add markers
-        const bounds = L.latLngBounds();
-        
-        reportsWithLocation.forEach(report => {
-            const lat = parseFloat(report.latitude);
-            const lng = parseFloat(report.longitude);
-            
-            if (isNaN(lat) || isNaN(lng)) return;
-            
-            // Create custom marker
-            const markerEl = document.createElement('div');
-            markerEl.className = `map-marker marker-${report.category}`;
-            markerEl.innerHTML = '<i class="fas fa-bug"></i>';
-            
-            if (report.category === 'disease') {
-                markerEl.innerHTML = '<i class="fas fa-virus"></i>';
-            } else if (report.category === 'other') {
-                markerEl.innerHTML = '<i class="fas fa-exclamation"></i>';
-            }
-            
-            const icon = L.divIcon({
-                className: 'custom-marker',
-                html: markerEl.outerHTML,
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            });
-            
-            // Create marker
-            const marker = L.marker([lat, lng], { icon: icon }).addTo(sightingsMap);
-            
-            // Add popup
-            marker.bindPopup(`
-                <div class="marker-popup">
-                    <h4>${report.name}</h4>
-                    <p><strong>Crop:</strong> ${report.cropAffected}</p>
-                    <p><strong>Date:</strong> ${new Date(report.dateObserved).toLocaleDateString()}</p>
-                    <p><strong>Severity:</strong> ${report.severity}/5</p>
-                </div>
-            `);
-            
-            // Add to bounds
-            bounds.extend([lat, lng]);
-        });
-        
-        // Fit map to bounds
-        if (bounds.isValid()) {
-            sightingsMap.fitBounds(bounds, {
-                padding: [50, 50]
-            });
-        }
-    }
+    });
     
-    // Function to initialize trends chart
-    function initTrendsChart() {
-        const ctx = document.getElementById('pest-trends-chart').getContext('2d');
-        
-        // Create chart
-        trendsChart = new Chart(ctx, {
-            type: 'bar',
+    // Severity Trend Chart
+    const severityCtx = document.getElementById('severityTrendChart').getContext('2d');
+    window.severityTrendChart = new Chart(severityCtx, {
+        type: 'line',
             data: {
-                labels: [],
+            labels: [], // Will be populated with dates
                 datasets: [
                     {
-                        label: 'Insect Pests',
-                        backgroundColor: '#f39c12',
+                    label: 'Low',
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
                         data: []
                     },
                     {
-                        label: 'Diseases',
-                        backgroundColor: '#e74c3c',
+                    label: 'Medium',
+                    borderColor: '#f39c12',
+                    backgroundColor: 'rgba(243, 156, 18, 0.1)',
                         data: []
                     },
                     {
-                        label: 'Other',
-                        backgroundColor: '#3498db',
+                    label: 'High',
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    data: []
+                },
+                {
+                    label: 'Critical',
+                    borderColor: '#8e44ad',
+                    backgroundColor: 'rgba(142, 68, 173, 0.1)',
                         data: []
                     }
                 ]
@@ -588,385 +675,798 @@ document.addEventListener('DOMContentLoaded', () => {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: {
-                        stacked: true,
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Reports'
+                    }
+                },
+                x: {
                         title: {
                             display: true,
-                            text: 'Month'
-                        }
-                    },
-                    y: {
-                        stacked: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Crop Distribution Chart
+    const cropCtx = document.getElementById('cropDistributionChart').getContext('2d');
+    window.cropDistributionChart = new Chart(cropCtx, {
+        type: 'bar',
+        data: {
+            labels: [], // Will be populated with crop names
+            datasets: [{
+                label: 'Affected Crops',
+                backgroundColor: '#3498db',
+                data: []
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
                         beginAtZero: true,
                         title: {
                             display: true,
                             text: 'Number of Reports'
-                        },
-                        ticks: {
-                            precision: 0
-                        }
                     }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Pest & Disease Reports by Month'
+                }
+            }
+        }
+    });
+    
+    // Treatment Effectiveness Chart
+    const treatmentCtx = document.getElementById('treatmentEffectivenessChart').getContext('2d');
+    window.treatmentEffectivenessChart = new Chart(treatmentCtx, {
+        type: 'radar',
+        data: {
+            labels: ['Insect Pests', 'Plant Diseases', 'Weeds', 'Rodents', 'Other'],
+            datasets: [{
+                label: 'Treatment Success Rate',
+                backgroundColor: 'rgba(58, 126, 79, 0.2)',
+                borderColor: '#3a7e4f',
+                pointBackgroundColor: '#3a7e4f',
+                data: [70, 65, 80, 75, 60]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
                     },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
+                    suggestedMin: 0,
+                    suggestedMax: 100
                     }
                 }
             }
         });
         
-        // Update chart data
-        updateTrendsChart();
-    }
+    // Setup date range filter for analytics
+    document.getElementById('date-range').addEventListener('change', function() {
+        updateCharts(currentReports);
+    });
+}
+
+/**
+ * Update analytics charts with report data
+ */
+function updateCharts(reports) {
+    // Filter reports by selected date range
+    const dateRange = parseInt(document.getElementById('date-range').value);
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - dateRange);
     
-    // Function to update trends chart
-    function updateTrendsChart() {
-        // Check if chart exists
-        if (!trendsChart) return;
+    const filteredReports = reports.filter(report => {
+        const reportDate = new Date(report.detectionDate);
+        return reportDate >= cutoffDate;
+    });
+    
+    // Update Pest Type Distribution Chart
+    const pestTypeCounts = {
+        insect: 0,
+        disease: 0,
+        weed: 0,
+        rodent: 0,
+        other: 0
+    };
+    
+    filteredReports.forEach(report => {
+        pestTypeCounts[report.reportType] = (pestTypeCounts[report.reportType] || 0) + 1;
+    });
+    
+    window.pestTypeChart.data.datasets[0].data = [
+        pestTypeCounts.insect,
+        pestTypeCounts.disease,
+        pestTypeCounts.weed,
+        pestTypeCounts.rodent,
+        pestTypeCounts.other
+    ];
+    window.pestTypeChart.update();
+    
+    // Update Severity Trend Chart (simplified for demo)
+    // Group by month for the demo
+    const severityByMonth = {};
+    
+    filteredReports.forEach(report => {
+        const month = report.detectionDate.substring(0, 7); // YYYY-MM
+        if (!severityByMonth[month]) {
+            severityByMonth[month] = { low: 0, medium: 0, high: 0, critical: 0 };
+        }
+        severityByMonth[month][report.severity]++;
+    });
+    
+    // Sort months
+    const sortedMonths = Object.keys(severityByMonth).sort();
         
-        // Check if there are reports
-        if (pestReports.length === 0) {
-            document.getElementById('insights-container').style.display = 'none';
+        // Update chart data
+    window.severityTrendChart.data.labels = sortedMonths.map(formatMonthYear);
+    window.severityTrendChart.data.datasets[0].data = sortedMonths.map(month => severityByMonth[month].low);
+    window.severityTrendChart.data.datasets[1].data = sortedMonths.map(month => severityByMonth[month].medium);
+    window.severityTrendChart.data.datasets[2].data = sortedMonths.map(month => severityByMonth[month].high);
+    window.severityTrendChart.data.datasets[3].data = sortedMonths.map(month => severityByMonth[month].critical);
+    window.severityTrendChart.update();
+    
+    // Update Crop Distribution Chart
+    const cropCounts = {};
+    filteredReports.forEach(report => {
+        cropCounts[report.cropAffected] = (cropCounts[report.cropAffected] || 0) + 1;
+    });
+    
+    // Sort crops by count (descending)
+    const sortedCrops = Object.keys(cropCounts).sort((a, b) => cropCounts[b] - cropCounts[a]);
+    
+    // Take top 10 crops
+    const topCrops = sortedCrops.slice(0, 10);
+    
+    window.cropDistributionChart.data.labels = topCrops;
+    window.cropDistributionChart.data.datasets[0].data = topCrops.map(crop => cropCounts[crop]);
+    window.cropDistributionChart.update();
+    
+    // Update insights panel
+    updateInsights(filteredReports);
+}
+
+/**
+ * Update insights panel with key statistics
+ */
+function updateInsights(reports) {
+    if (reports.length === 0) {
+        document.getElementById('analytics-insights').innerHTML = '<p>No data available for the selected time period.</p>';
             return;
         }
         
-        // Get data for last 6 months
-        const now = new Date();
-        const months = [];
-        const insectData = [];
-        const diseaseData = [];
-        const otherData = [];
-        
-        // Create months array
-        for (let i = 5; i >= 0; i--) {
-            const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            months.push(month.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }));
-        }
-        
-        // Count reports by month and category
-        for (let i = 5; i >= 0; i--) {
-            const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-            
-            const insectCount = pestReports.filter(report => {
-                const reportDate = new Date(report.dateObserved);
-                return reportDate >= monthStart && reportDate <= monthEnd && report.category === 'insect';
-            }).length;
-            
-            const diseaseCount = pestReports.filter(report => {
-                const reportDate = new Date(report.dateObserved);
-                return reportDate >= monthStart && reportDate <= monthEnd && report.category === 'disease';
-            }).length;
-            
-            const otherCount = pestReports.filter(report => {
-                const reportDate = new Date(report.dateObserved);
-                return reportDate >= monthStart && reportDate <= monthEnd && report.category === 'other';
-            }).length;
-            
-            insectData.push(insectCount);
-            diseaseData.push(diseaseCount);
-            otherData.push(otherCount);
-        }
-        
-        // Update chart data
-        trendsChart.data.labels = months;
-        trendsChart.data.datasets[0].data = insectData;
-        trendsChart.data.datasets[1].data = diseaseData;
-        trendsChart.data.datasets[2].data = otherData;
-        
-        // Update chart
-        trendsChart.update();
-        
-        // Generate insights
-        generateInsights(insectData, diseaseData, otherData);
-    }
+    // Calculate key metrics
+    const totalReports = reports.length;
     
-    // Function to generate insights
-    function generateInsights(insectData, diseaseData, otherData) {
-        const insightsContainer = document.getElementById('insights-container');
-        
-        // Check if data is empty
-        const totalReports = insectData.reduce((sum, val) => sum + val, 0) + 
-                            diseaseData.reduce((sum, val) => sum + val, 0) + 
-                            otherData.reduce((sum, val) => sum + val, 0);
-        
-        if (totalReports === 0) {
-            document.querySelector('.trend-insights .no-data-message').style.display = 'block';
-            insightsContainer.style.display = 'none';
-            return;
-        }
-        
-        // Show insights container
-        document.querySelector('.trend-insights .no-data-message').style.display = 'none';
-        insightsContainer.style.display = 'block';
-        
-        // Clear insights container
-        insightsContainer.innerHTML = '';
-        
-        // Calculate trends
-        const insectTrend = insectData[5] - insectData[0];
-        const diseaseTrend = diseaseData[5] - diseaseData[0];
-        
-        // Create insights
-        const insights = [];
-        
-        // Most common category
-        const currentInsects = insectData[5];
-        const currentDiseases = diseaseData[5];
-        const currentOther = otherData[5];
-        
-        const maxCategory = Math.max(currentInsects, currentDiseases, currentOther);
-        
-        if (maxCategory > 0) {
-            if (maxCategory === currentInsects) {
-                insights.push({
-                    title: 'Insect Pests Dominate',
-                    content: `Insect pests are currently your most reported pest type (${currentInsects} reports in the current month). Monitor crops closely and consider implementing insect control measures.`,
-                    icon: 'fa-bug'
-                });
-            } else if (maxCategory === currentDiseases) {
-                insights.push({
-                    title: 'Disease Pressure High',
-                    content: `Diseases are currently your most reported pest type (${currentDiseases} reports in the current month). Consider fungicide applications and improving air circulation.`,
-                    icon: 'fa-virus'
-                });
-            }
-        }
-        
-        // Trends
-        if (insectTrend > 0) {
-            insights.push({
-                title: 'Increasing Insect Activity',
-                content: `Insect pest reports have increased by ${insectTrend} over the past 6 months. This could be seasonal or indicate a growing problem that needs attention.`,
-                icon: 'fa-chart-line'
-            });
-        } else if (insectTrend < 0) {
-            insights.push({
-                title: 'Declining Insect Activity',
-                content: `Insect pest reports have decreased by ${Math.abs(insectTrend)} over the past 6 months. Your control measures may be working effectively.`,
-                icon: 'fa-chart-line'
-            });
-        }
-        
-        if (diseaseTrend > 0) {
-            insights.push({
-                title: 'Increasing Disease Pressure',
-                content: `Disease reports have increased by ${diseaseTrend} over the past 6 months. Check for environmental factors like excessive moisture or poor airflow.`,
-                icon: 'fa-chart-line'
-            });
-        } else if (diseaseTrend < 0) {
-            insights.push({
-                title: 'Improving Disease Control',
-                content: `Disease reports have decreased by ${Math.abs(diseaseTrend)} over the past 6 months. Your disease management practices appear to be effective.`,
-                icon: 'fa-chart-line'
-            });
-        }
-        
-        // Add seasonal message
-        const currentMonth = new Date().getMonth();
-        
-        if (currentMonth >= 2 && currentMonth <= 4) { // Spring
-            insights.push({
-                title: 'Spring Pest Management',
-                content: 'Spring is a critical time for pest management. Focus on early detection and intervention to prevent population buildup throughout the growing season.',
-                icon: 'fa-seedling'
-            });
-        } else if (currentMonth >= 5 && currentMonth <= 7) { // Summer
-            insights.push({
-                title: 'Summer Pest Pressure',
-                content: 'Summer heat often increases insect reproduction rates. Monitor more frequently and ensure proper irrigation to minimize heat stress on plants.',
-                icon: 'fa-sun'
-            });
-        } else if (currentMonth >= 8 && currentMonth <= 10) { // Fall
-            insights.push({
-                title: 'Fall Pest Preparations',
-                content: 'As temperatures cool, focus on preventing overwintering pests and clearing crop debris that could harbor diseases for next season.',
-                icon: 'fa-leaf'
-            });
-        } else { // Winter
-            insights.push({
-                title: 'Winter Planning',
-                content: 'Use this time to analyze pest patterns from the past year and develop an integrated pest management strategy for the coming season.',
-                icon: 'fa-snowflake'
-            });
-        }
-        
-        // Display insights
-        insights.slice(0, 3).forEach(insight => {
-            const insightCard = document.createElement('div');
-            insightCard.className = 'insight-card';
-            
-            insightCard.innerHTML = `
-                <div class="insight-title">
-                    <i class="fas ${insight.icon}"></i>
-                    ${insight.title}
-                </div>
-                <div class="insight-content">
-                    ${insight.content}
-                </div>
-            `;
-            
-            insightsContainer.appendChild(insightCard);
+    // Most common pest/disease
+    const pestCounts = {};
+    reports.forEach(report => {
+        pestCounts[report.pestName] = (pestCounts[report.pestName] || 0) + 1;
+    });
+    
+    const mostCommonPest = Object.keys(pestCounts).reduce((a, b) => pestCounts[a] > pestCounts[b] ? a : b);
+    const mostCommonPestPercentage = ((pestCounts[mostCommonPest] / totalReports) * 100).toFixed(1);
+    
+    // Most affected crop
+    const cropCounts = {};
+    reports.forEach(report => {
+        cropCounts[report.cropAffected] = (cropCounts[report.cropAffected] || 0) + 1;
+    });
+    
+    const mostAffectedCrop = Object.keys(cropCounts).reduce((a, b) => cropCounts[a] > cropCounts[b] ? a : b);
+    const mostAffectedCropPercentage = ((cropCounts[mostAffectedCrop] / totalReports) * 100).toFixed(1);
+    
+    // High severity percentage
+    const highSeverityCount = reports.filter(report => ['high', 'critical'].includes(report.severity)).length;
+    const highSeverityPercentage = ((highSeverityCount / totalReports) * 100).toFixed(1);
+    
+    // Total affected area
+    const totalArea = reports.reduce((sum, report) => sum + parseFloat(report.areaAffected || 0), 0).toFixed(1);
+    
+    // Update insights HTML
+    document.getElementById('analytics-insights').innerHTML = `
+        <div class="insights-grid">
+            <div class="insight-item">
+                <div class="insight-value">${totalReports}</div>
+                <div class="insight-label">Total Reports</div>
+            </div>
+            <div class="insight-item">
+                <div class="insight-value">${mostCommonPest}</div>
+                <div class="insight-label">Most Common Pest (${mostCommonPestPercentage}%)</div>
+            </div>
+            <div class="insight-item">
+                <div class="insight-value">${mostAffectedCrop}</div>
+                <div class="insight-label">Most Affected Crop (${mostAffectedCropPercentage}%)</div>
+            </div>
+            <div class="insight-item">
+                <div class="insight-value">${highSeverityPercentage}%</div>
+                <div class="insight-label">High/Critical Severity</div>
+            </div>
+            <div class="insight-item">
+                <div class="insight-value">${totalArea}</div>
+                <div class="insight-label">Total Affected Area (acres)</div>
+            </div>
+        </div>
+        <div class="insights-recommendations">
+            <h4>Recommendations</h4>
+            <ul>
+                <li>Focus monitoring on ${mostAffectedCrop} crops, which are most commonly affected.</li>
+                <li>Implement prevention measures for ${mostCommonPest}, the most frequent pest/disease.</li>
+                ${highSeverityPercentage > 30 ? '<li class="high-priority">High percentage of severe cases detected. Consider area-wide control measures.</li>' : ''}
+            </ul>
+        </div>
+    `;
+}
+
+/**
+ * Setup modal functionality
+ */
+function setupModals() {
+    // Get modal elements
+    const reportModal = document.getElementById('report-detail-modal');
+    const treatmentModal = document.getElementById('treatment-modal');
+    
+    // Get close buttons
+    const closeButtons = document.querySelectorAll('.close-modal');
+    
+    // Add close functionality
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            reportModal.style.display = 'none';
+            treatmentModal.style.display = 'none';
         });
+    });
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target === reportModal) {
+            reportModal.style.display = 'none';
+        }
+        if (event.target === treatmentModal) {
+            treatmentModal.style.display = 'none';
+        }
+    });
+    
+    // Setup report delete button
+    document.getElementById('delete-report-btn').addEventListener('click', function() {
+        const reportId = this.getAttribute('data-report-id');
+        deleteReport(reportId);
+        reportModal.style.display = 'none';
+    });
+    
+    // Setup report edit button (not implemented in this demo)
+    document.getElementById('edit-report-btn').addEventListener('click', function() {
+        const reportId = this.getAttribute('data-report-id');
+        showAlert('Edit functionality is not implemented in this demo', 'info');
+    });
+}
+
+/**
+ * Open report detail modal for a specific report
+ */
+function openReportDetailModal(reportId) {
+    // Find report data
+    const report = currentReports.find(r => r.id === reportId);
+    
+    if (!report) {
+        showAlert('Report not found', 'error');
+        return;
     }
     
-    // Function to get AI solution for pest/disease
-    function getAISolution() {
-        // Get form data
-        const pestName = document.getElementById('pest-name').value.trim();
-        const category = document.getElementById('category').value;
-        const description = document.getElementById('description').value.trim();
-        const affectedCrops = document.getElementById('affected-crops').value.trim();
-        const severity = document.getElementById('severity').value;
+    // Populate modal content
+    const modalContent = document.getElementById('report-detail-content');
+    
+    modalContent.innerHTML = `
+        <div class="report-detail-section">
+            <h3>Basic Information</h3>
+            <div class="report-info-grid">
+                <div class="report-info-item">
+                    <div class="report-info-label">Pest/Disease Type</div>
+                    <div class="report-info-value">${capitalizeFirst(report.reportType)}</div>
+                </div>
+                <div class="report-info-item">
+                    <div class="report-info-label">Name</div>
+                    <div class="report-info-value">${report.pestName}</div>
+                </div>
+                <div class="report-info-item">
+                    <div class="report-info-label">Affected Crop</div>
+                    <div class="report-info-value">${report.cropAffected}</div>
+                </div>
+                <div class="report-info-item">
+                    <div class="report-info-label">Severity</div>
+                    <div class="report-info-value">
+                        <span class="severity-label severity-${report.severity}">${capitalizeFirst(report.severity)}</span>
+                    </div>
+                </div>
+                <div class="report-info-item">
+                    <div class="report-info-label">Status</div>
+                    <div class="report-info-value">
+                        <span class="status-label status-${report.status}">${formatStatus(report.status)}</span>
+                    </div>
+                </div>
+                <div class="report-info-item">
+                    <div class="report-info-label">Detection Date</div>
+                    <div class="report-info-value">${formatDate(report.detectionDate)}</div>
+                </div>
+            </div>
+        </div>
         
-        // Validate basic inputs
-        if (!pestName || !category || !description) {
-            alert('Please fill in pest name, category, and description to get AI recommendations');
-            return;
-        }
+        <div class="report-detail-section">
+            <h3>Location Details</h3>
+            <div class="report-info-grid">
+                <div class="report-info-item">
+                    <div class="report-info-label">Location Name</div>
+                    <div class="report-info-value">${report.locationName}</div>
+                </div>
+                <div class="report-info-item">
+                    <div class="report-info-label">Area Affected</div>
+                    <div class="report-info-value">${report.areaAffected} acres</div>
+                </div>
+                <div class="report-info-item">
+                    <div class="report-info-label">Coordinates</div>
+                    <div class="report-info-value">${report.locationLat}, ${report.locationLng}</div>
+                </div>
+            </div>
+        </div>
         
-        // Show loading state
-        aiSolutionContent.innerHTML = `
-            <div class="loading-indicator">
-                <i class="fas fa-spinner fa-spin"></i> Analyzing your pest problem...
+        <div class="report-detail-section">
+            <h3>Additional Notes</h3>
+            <p>${report.notes || 'No additional notes provided.'}</p>
+        </div>
+        
+        <div class="report-detail-section">
+            <h3>Treatment Recommendations</h3>
+            <button id="view-treatment-btn" class="btn primary-btn" data-pest="${report.pestName}">
+                View Treatment Guide
+            </button>
             </div>
         `;
-        aiSolutionContainer.style.display = 'block';
-        
-        // In a real implementation, this would be an API call to an AI service
-        // For this demo, we'll simulate the AI response with predefined responses
-        setTimeout(() => {
-            let aiResponse = generateAIPestSolution(pestName, category, affectedCrops, severity, description);
-            
-            // Display the AI response
-            aiSolutionContent.innerHTML = aiResponse;
-            
-            // Scroll to the solution
-            aiSolutionContainer.scrollIntoView({ behavior: 'smooth' });
-        }, 1500);
-    }
     
-    // Generate AI solution based on pest information
-    function generateAIPestSolution(pestName, category, crops, severity, description) {
-        // Convert to lowercase for easier matching
-        const pestNameLower = pestName.toLowerCase();
-        const descriptionLower = description.toLowerCase();
+    // Add event listener to treatment button
+    document.getElementById('view-treatment-btn').addEventListener('click', function() {
+        const pestName = this.getAttribute('data-pest');
+        openTreatmentModal(pestName);
+    });
+    
+    // Set report ID on delete and edit buttons
+    document.getElementById('delete-report-btn').setAttribute('data-report-id', reportId);
+    document.getElementById('edit-report-btn').setAttribute('data-report-id', reportId);
+    
+    // Show modal
+    document.getElementById('report-detail-modal').style.display = 'block';
+}
+
+/**
+ * Open treatment guide modal for a specific pest
+ */
+function openTreatmentModal(pestName) {
+    // Simulate fetching treatment information
+    const treatment = getTreatmentInfo(pestName);
+    
+    // Populate modal content
+    const modalContent = document.getElementById('treatment-modal-content');
+    
+    modalContent.innerHTML = `
+        <h2>Treatment Guide: ${treatment.name}</h2>
         
-        // Predefined solutions for common pests
-        let solution = '';
+        <div class="treatment-section">
+            <h3>About</h3>
+            <p>${treatment.description}</p>
+        </div>
         
-        // Check for common pests
-        if (pestNameLower.includes('aphid')) {
-            solution = `
-                <h4>Management Strategy for Aphids</h4>
-                <p>Aphids are small sap-sucking insects that can rapidly reproduce and damage crops.</p>
-                
-                <h5>Recommended Control Methods:</h5>
-                <ul>
-                    <li><strong>Biological Control:</strong> Introduce beneficial insects like ladybugs, lacewings, or parasitic wasps.</li>
-                    <li><strong>Organic Sprays:</strong> Use insecticidal soap, neem oil, or a mixture of water with a few drops of dish soap.</li>
-                    <li><strong>Cultural Practices:</strong> Remove heavily infested plant parts, use reflective mulches, or plant trap crops.</li>
-                    ${severity === 'high' ? '<li><strong>Chemical Control:</strong> In severe cases, consider specific aphid insecticides, following all label instructions and safety precautions.</li>' : ''}
+        <div class="treatment-section">
+            <h3>Common Symptoms</h3>
+            <ul>
+                ${treatment.symptoms.map(symptom => `<li>${symptom}</li>`).join('')}
                 </ul>
-                
-                <h5>Prevention:</h5>
-                <ul>
-                    <li>Monitor plants regularly for early detection</li>
-                    <li>Avoid excessive nitrogen fertilization</li>
-                    <li>Maintain healthy plants with proper watering and nutrition</li>
-                    <li>Plant aphid-repelling companions like garlic, onions, or marigolds</li>
+        </div>
+        
+        <div class="treatment-section">
+            <h3>Treatment Methods</h3>
+            <div class="treatment-methods">
+                ${treatment.methods.map(method => `
+                    <div class="treatment-method">
+                        <h4>${method.name}</h4>
+                        <p>${method.description}</p>
+                        ${method.application ? `<p><strong>Application:</strong> ${method.application}</p>` : ''}
+                        ${method.effectiveness ? `<p><strong>Effectiveness:</strong> ${method.effectiveness}</p>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        
+        <div class="treatment-section">
+            <h3>Prevention</h3>
+            <ul>
+                ${treatment.prevention.map(item => `<li>${item}</li>`).join('')}
                 </ul>
-            `;
-        } else if (pestNameLower.includes('powdery mildew') || (category === 'disease' && descriptionLower.includes('white') && descriptionLower.includes('powder'))) {
-            solution = `
-                <h4>Management Strategy for Powdery Mildew</h4>
-                <p>Powdery mildew is a fungal disease that appears as white powdery spots on leaves and stems.</p>
-                
-                <h5>Recommended Control Methods:</h5>
-                <ul>
-                    <li><strong>Cultural Control:</strong> Improve air circulation by proper spacing and pruning.</li>
-                    <li><strong>Organic Treatments:</strong> Spray with a solution of 1 tablespoon baking soda, 1 teaspoon mild liquid soap, and 1 gallon of water.</li>
-                    <li><strong>Milk Spray:</strong> Diluted milk (1:10 with water) can be effective against powdery mildew.</li>
-                    ${severity === 'high' ? '<li><strong>Fungicides:</strong> For severe infections, use sulfur-based fungicides or specific powdery mildew formulations.</li>' : ''}
-                </ul>
-                
-                <h5>Prevention:</h5>
-                <ul>
-                    <li>Plant resistant varieties when available</li>
-                    <li>Avoid overhead watering and water in the morning</li>
-                    <li>Remove and destroy infected plant parts</li>
-                    <li>Rotate crops and clean tools between uses</li>
-                </ul>
-            `;
-        } else if ((pestNameLower.includes('beetle') || pestNameLower.includes('weevil')) && category === 'insect') {
-            solution = `
-                <h4>Management Strategy for Beetles/Weevils</h4>
-                <p>Beetles and weevils are common insect pests that can cause significant damage by feeding on leaves, fruits, or roots.</p>
-                
-                <h5>Recommended Control Methods:</h5>
-                <ul>
-                    <li><strong>Physical Removal:</strong> Handpick beetles from plants when populations are low.</li>
-                    <li><strong>Barriers:</strong> Use row covers or protective mesh to prevent adult beetles from reaching plants.</li>
-                    <li><strong>Biological Control:</strong> Encourage natural predators like birds, beneficial nematodes, or predatory insects.</li>
-                    ${severity === 'high' ? '<li><strong>Insecticides:</strong> For severe infestations, consider botanical insecticides like pyrethrin or specific beetle-targeting products.</li>' : ''}
-                </ul>
-                
-                <h5>Prevention:</h5>
-                <ul>
-                    <li>Practice crop rotation to break pest cycles</li>
-                    <li>Delay planting until after peak beetle emergence</li>
-                    <li>Keep garden clean of debris and weeds</li>
-                    <li>Use trap crops to lure beetles away from main crops</li>
-                </ul>
-            `;
-        } else if ((category === 'disease' && (descriptionLower.includes('spot') || descriptionLower.includes('lesion')))) {
-            solution = `
-                <h4>Management Strategy for Leaf Spot Disease</h4>
-                <p>Leaf spot diseases are caused by various fungi or bacteria and appear as distinct spots or lesions on leaves.</p>
-                
-                <h5>Recommended Control Methods:</h5>
-                <ul>
-                    <li><strong>Cultural Control:</strong> Remove and destroy infected leaves and debris.</li>
-                    <li><strong>Watering Management:</strong> Avoid wetting leaves when watering, especially in late afternoon or evening.</li>
-                    <li><strong>Organic Options:</strong> Copper-based fungicides or compost tea applications can help control spread.</li>
-                    ${severity === 'high' ? '<li><strong>Chemical Control:</strong> For severe infections, consider appropriate fungicides based on the specific pathogen.</li>' : ''}
-                </ul>
-                
-                <h5>Prevention:</h5>
-                <ul>
-                    <li>Improve air circulation around plants</li>
-                    <li>Use drip irrigation or soaker hoses instead of overhead watering</li>
-                    <li>Practice crop rotation</li>
-                    <li>Select resistant varieties when available</li>
-                </ul>
+        </div>
+    `;
+    
+    // Show modal
+    document.getElementById('treatment-modal').style.display = 'block';
+}
+
+/**
+ * Get treatment information for a pest (demo data)
+ */
+function getTreatmentInfo(pestName) {
+    // In a real application, this would come from a database or API
+    const treatments = {
+        'Aphids': {
+            name: 'Aphids',
+            description: 'Aphids are small sap-sucking insects that can cause significant damage to crops by transmitting plant viruses and causing leaf curl, stunting, and reduced yield.',
+            symptoms: [
+                'Curled or distorted leaves',
+                'Yellowing foliage',
+                'Stunted growth',
+                'Sticky residue on leaves (honeydew)',
+                'Black sooty mold growing on honeydew',
+                'Visible small insects on new growth or undersides of leaves'
+            ],
+            methods: [
+                {
+                    name: 'Biological Control',
+                    description: 'Use natural predators such as ladybugs, lacewings, and parasitic wasps to control aphid populations.',
+                    application: 'Release beneficial insects early when aphid populations are first detected.',
+                    effectiveness: 'High for long-term management, requires time to establish'
+                },
+                {
+                    name: 'Insecticidal Soap',
+                    description: 'Mild insecticide that breaks down the outer layer of aphids causing dehydration and death.',
+                    application: 'Spray directly on aphids, ensuring coverage of undersides of leaves. Apply weekly until infestation is controlled.',
+                    effectiveness: 'Moderate to high for small infestations, requires direct contact'
+                },
+                {
+                    name: 'Neem Oil',
+                    description: 'Natural insecticide that disrupts feeding and reproduction in aphids.',
+                    application: 'Mix 2-4 tablespoons per gallon of water and spray foliage thoroughly, including undersides of leaves.',
+                    effectiveness: 'Moderate, best used preventatively or for light infestations'
+                },
+                {
+                    name: 'Systemic Insecticides',
+                    description: 'Chemical insecticides that are absorbed by the plant and kill aphids when they feed.',
+                    application: 'Apply according to product instructions, typically as a soil drench or foliar spray.',
+                    effectiveness: 'High, but may impact beneficial insects and pollinators'
+                }
+            ],
+            prevention: [
+                'Monitor crops regularly for early detection',
+                'Maintain healthy plants with proper water and nutrients',
+                'Plant aphid-repelling companions like garlic, onions, or chives',
+                'Use reflective mulches to confuse aphids',
+                'Remove heavily infested plant parts',
+                'Control ant populations as they protect aphids from predators',
+                'Avoid excessive nitrogen fertilization which promotes lush growth attractive to aphids'
+            ]
+        },
+        'Powdery Mildew': {
+            name: 'Powdery Mildew',
+            description: 'Powdery mildew is a fungal disease that affects a wide range of plants, characterized by a white to gray powdery growth on leaves, stems, and sometimes fruit.',
+            symptoms: [
+                'White to gray powdery spots on leaves and stems',
+                'Yellowing or browning of infected tissues',
+                'Distorted or stunted growth',
+                'Premature leaf drop',
+                'Reduced yield and quality of fruit or flowers'
+            ],
+            methods: [
+                {
+                    name: 'Fungicides with Sulfur',
+                    description: 'Sulfur-based fungicides prevent spore germination and inhibit fungal growth.',
+                    application: 'Apply at first sign of infection, typically every 7-14 days. Do not apply when temperatures exceed 90°F (32°C).',
+                    effectiveness: 'High as preventative, moderate as curative'
+                },
+                {
+                    name: 'Potassium Bicarbonate',
+                    description: 'Organic fungicide that alters pH on leaf surface, destroying the powdery mildew spores.',
+                    application: 'Mix 1 tablespoon per gallon of water with a few drops of liquid soap. Spray thoroughly on all plant surfaces.',
+                    effectiveness: 'Moderate to high, especially on early infections'
+                },
+                {
+                    name: 'Milk Spray',
+                    description: 'Natural fungicide using diluted milk (1:10 ratio of milk to water).',
+                    application: 'Spray on infected plants every 7-10 days, preferably in morning so it can dry completely.',
+                    effectiveness: 'Low to moderate, best for light infections'
+                },
+                {
+                    name: 'Synthetic Fungicides',
+                    description: 'Chemical fungicides specifically designed to control powdery mildew.',
+                    application: 'Follow product instructions precisely, typically applied every 7-14 days.',
+                    effectiveness: 'High, but may require rotation to prevent resistance'
+                }
+            ],
+            prevention: [
+                'Plant resistant varieties when available',
+                'Ensure proper spacing between plants for good air circulation',
+                'Avoid overhead watering to keep foliage dry',
+                'Water at the base of plants, preferably in the morning',
+                'Remove and destroy infected plant parts promptly',
+                'Avoid excessive nitrogen fertilization',
+                'Clean tools and equipment after working with infected plants',
+                'Practice crop rotation with non-susceptible plants'
+            ]
+        },
+        'Late Blight': {
+            name: 'Late Blight',
+            description: 'Late blight is a devastating plant disease caused by the water mold Phytophthora infestans. It affects potatoes and tomatoes primarily, capable of destroying entire crops rapidly in favorable conditions.',
+            symptoms: [
+                'Dark, water-soaked spots on leaves, often with pale green borders',
+                'White fuzzy growth on undersides of leaves in humid conditions',
+                'Dark lesions on stems',
+                'Firm, brown spots on potatoes or tomato fruits that may become soft',
+                'Rapid wilting and death of foliage in wet conditions',
+                'Distinctive unpleasant odor from infected tissue'
+            ],
+            methods: [
+                {
+                    name: 'Copper Fungicides',
+                    description: 'Broad-spectrum fungicide that prevents infection by destroying spores before they can germinate.',
+                    application: 'Apply every 5-7 days during wet weather or when disease threatens. Must be applied before infection occurs.',
+                    effectiveness: 'Moderate as preventative only, not curative'
+                },
+                {
+                    name: 'Chlorothalonil',
+                    description: 'Protective fungicide that prevents spore germination.',
+                    application: 'Apply every 5-10 days when conditions favor disease. Complete coverage is essential.',
+                    effectiveness: 'High as preventative, not effective on existing infections'
+                },
+                {
+                    name: 'Systemic Fungicides',
+                    description: 'Chemical fungicides that move through plant tissues to protect uninfected parts and sometimes suppress existing infections.',
+                    application: 'Apply according to product instructions, typically every 7-14 days.',
+                    effectiveness: 'High, especially combination products with both protective and systemic activities'
+                },
+                {
+                    name: 'Crop Removal',
+                    description: 'Complete removal and destruction of infected plants to prevent spread.',
+                    application: 'Remove all infected plant material, bag it, and remove from garden. Do not compost.',
+                    effectiveness: 'Necessary for limiting spread, but not a treatment'
+                }
+            ],
+            prevention: [
+                'Plant resistant varieties',
+                'Purchase certified disease-free seed potatoes',
+                'Avoid overhead irrigation; use drip irrigation instead',
+                'Increase plant spacing to improve air circulation',
+                'Rotate crops with non-host plants for at least 2-3 years',
+                'Remove volunteer potatoes and tomatoes',
+                'Apply preventative fungicides before disease appears',
+                'Destroy all infected plant material; never compost it',
+                'Clean tools and equipment after use on infected plants',
+                'Hill potato plants well to protect tubers from spores'
+            ]
+        }
+    };
+    
+    // Return treatment info or a default if not found
+    return treatments[pestName] || {
+        name: pestName,
+        description: `Information for ${pestName} is currently being compiled.`,
+        symptoms: ['Symptoms vary depending on crop and conditions.'],
+        methods: [
+            {
+                name: 'Consult an Expert',
+                description: 'For the most accurate treatment recommendations, consult with a local agricultural extension service or pest management specialist.',
+                application: 'Contact your local agricultural extension office for specific guidance.',
+                effectiveness: 'Varies based on implementation of recommendations'
+            }
+        ],
+        prevention: [
+            'Regular monitoring for early detection',
+            'Maintain plant health through proper nutrition and irrigation',
+            'Practice crop rotation',
+            'Remove potentially infected plant debris',
+            'Use resistant varieties when available'
+        ]
+    };
+}
+
+/**
+ * Setup treatment guide search
+ */
+function setupTreatmentSearch() {
+    const searchInput = document.getElementById('treatment-search');
+    const searchButton = searchInput.nextElementSibling;
+    
+    const performSearch = function() {
+        const searchTerm = searchInput.value.trim();
+        
+        if (!searchTerm) return;
+        
+        // Simulate a search
+        const results = [
+            { name: 'Aphids', type: 'insect', crops: 'Various' },
+            { name: 'Powdery Mildew', type: 'disease', crops: 'Various' },
+            { name: 'Late Blight', type: 'disease', crops: 'Potato, Tomato' }
+        ].filter(item => 
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.crops.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        // Display results
+        const container = document.getElementById('treatment-guides');
+        
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div class="guide-preview">
+                    <p>No treatment guides found for "${searchTerm}". Try a different search term.</p>
+                </div>
             `;
         } else {
-            // Generic response for unrecognized pests
-            solution = `
-                <h4>Management Strategy for ${pestName}</h4>
-                <p>Based on your description of a ${severity} severity ${category} affecting ${crops || 'your crops'}, here are some general recommendations:</p>
-                
-                <h5>Recommended Control Methods:</h5>
-                <ul>
-                    <li><strong>Identification:</strong> Confirm the exact species/pathogen for targeted control. Consider consulting with a local extension office or agricultural expert.</li>
-                    <li><strong>Cultural Controls:</strong> Modify the growing environment to reduce pest pressure through spacing, pruning, or adjusting irrigation practices.</li>
-                    <li><strong>Biological Controls:</strong> Introduce or encourage natural enemies appropriate for this ${category}.</li>
-                    <li><strong>Physical Controls:</strong> Use barriers, traps, or manual removal when possible.</li>
-                    ${severity === 'high' ? '<li><strong>Chemical Controls:</strong> As a last resort, select appropriate pesticides based on the specific pest and follow all safety guidelines.</li>' : ''}
-                </ul>
-                
-                <h5>Integrated Pest Management Approach:</h5>
-                <p>For the most effective control, combine multiple strategies in an integrated approach, starting with the least toxic methods first.</p>
-                
-                <p><em>Note: For more specific recommendations, consider providing detailed photos and consulting with a local agricultural extension service.</em></p>
-            `;
+            container.innerHTML = results.map(result => `
+                <div class="guide-preview">
+                    <h4>${result.name}</h4>
+                    <p>Type: ${capitalizeFirst(result.type)}</p>
+                    <p>Common in: ${result.crops}</p>
+                    <button class="btn primary-btn btn-sm view-treatment-btn" data-pest="${result.name}">
+                        View Guide
+                    </button>
+                </div>
+            `).join('');
+            
+            // Add event listeners to buttons
+            document.querySelectorAll('.view-treatment-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const pestName = this.getAttribute('data-pest');
+                    openTreatmentModal(pestName);
+                });
+            });
         }
+    };
+    
+    searchButton.addEventListener('click', performSearch);
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+}
+
+/**
+ * Update alerts in the sidebar based on recent high-severity reports
+ */
+function updateAlerts(reports) {
+    const container = document.getElementById('alerts-container');
+    
+    // Filter to recent high-severity reports (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const alertReports = reports.filter(report => {
+        const reportDate = new Date(report.detectionDate);
+        return reportDate >= thirtyDaysAgo && ['high', 'critical'].includes(report.severity);
+    });
+    
+    // Sort by date (newest first)
+    alertReports.sort((a, b) => new Date(b.detectionDate) - new Date(a.detectionDate));
+    
+    // Take top 5 alerts
+    const recentAlerts = alertReports.slice(0, 5);
+    
+    if (recentAlerts.length === 0) {
+        container.innerHTML = '<p class="no-alerts-message">No recent alerts in your area.</p>';
+    } else {
+        container.innerHTML = recentAlerts.map(alert => `
+            <div class="alert-item ${alert.severity}">
+                <div class="alert-header">
+                    <span class="alert-title">${alert.pestName} on ${alert.cropAffected}</span>
+                    <span class="alert-date">${formatDate(alert.detectionDate)}</span>
+                </div>
+                <p class="alert-message">
+                    <strong>${capitalizeFirst(alert.severity)} severity</strong> detected at ${alert.locationName}.
+                    <a href="#" class="alert-details-link" data-report-id="${alert.id}">Details</a>
+                </p>
+            </div>
+        `).join('');
         
-        return solution;
+        // Add event listeners to detail links
+        document.querySelectorAll('.alert-details-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const reportId = this.getAttribute('data-report-id');
+                openReportDetailModal(reportId);
+            });
+        });
     }
-}); 
+}
+
+/**
+ * Delete a report from local storage
+ */
+function deleteReport(reportId) {
+    // Get existing reports from local storage
+    let reports = JSON.parse(localStorage.getItem('pestReports')) || [];
+    
+    // Filter out the report to delete
+    reports = reports.filter(report => report.id !== reportId);
+    
+    // Save back to local storage
+    localStorage.setItem('pestReports', JSON.stringify(reports));
+    
+    // Reload data
+    loadReportData();
+    
+    // Show success message
+    showAlert('Report deleted successfully', 'success');
+}
+
+/**
+ * Display an alert message to the user
+ */
+function showAlert(message, type = 'info') {
+    // Create alert element
+    const alertElement = document.createElement('div');
+    alertElement.className = `alert alert-${type}`;
+    alertElement.innerHTML = `
+        <span class="alert-message">${message}</span>
+        <button class="alert-close"><i class="fas fa-times"></i></button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(alertElement);
+    
+    // Add close button functionality
+    alertElement.querySelector('.alert-close').addEventListener('click', function() {
+        alertElement.remove();
+    });
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (document.body.contains(alertElement)) {
+            alertElement.remove();
+        }
+    }, 5000);
+}
+
+/**
+ * Utility function to generate a unique ID
+ */
+function generateUniqueId() {
+    return 'id-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+}
+
+/**
+ * Utility function to format a date string
+ */
+function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+}
+
+/**
+ * Utility function to format month and year
+ */
+function formatMonthYear(yearMonth) {
+    const [year, month] = yearMonth.split('-');
+    return new Date(year, month - 1).toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
+}
+
+/**
+ * Utility function to format status text
+ */
+function formatStatus(status) {
+    switch (status) {
+        case 'new': return 'New';
+        case 'investigating': return 'Investigating';
+        case 'treating': return 'Treating';
+        case 'resolved': return 'Resolved';
+        case 'monitoring': return 'Monitoring';
+        default: return capitalizeFirst(status);
+    }
+}
+
+/**
+ * Utility function to capitalize first letter
+ */
+function capitalizeFirst(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+} 

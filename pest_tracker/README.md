@@ -1,83 +1,121 @@
-# Pest & Disease Tracker
+# Pest & Disease Monitor
 
-A comprehensive web application for farmers and gardeners to track, report, and analyze pest and disease outbreaks on their crops. This tool helps in early identification of potential infestations and enables data-driven pest management decisions.
+A comprehensive pest and disease monitoring system for agricultural management. This module allows farmers to track, report, and analyze pest and disease occurrences in their fields.
 
 ## Features
 
-- **Pest & Disease Reporting**: Report new sightings with detailed information including type, severity, location, and images
-- **Interactive Map**: Visual representation of all reported sightings with location markers and details
-- **Trend Analysis**: Charts showing pest and disease trends over time
-- **Data Insights**: Automated insights generated based on collected data
-- **Searchable Reports**: Filter and search through past reports
-- **Image Upload**: Attach multiple images to document pest identification
-- **Mobile Responsive**: Works on both desktop and mobile devices
+### Interactive Map View
+- Visualize pest and disease occurrences on an interactive map
+- Color-coded markers based on severity levels
+- Popup details for quick information access
+- Automatic geolocation for reporting
 
-## Setup Instructions
+### Detailed Reporting System
+- Comprehensive reporting form for pest and disease incidents
+- Categorization by pest type, crop affected, and severity
+- Location tracking with coordinates and field names
+- Image upload support for visual documentation
+- Notes and additional information fields
 
-1. Clone or download the repository
-2. No installation required - this is a client-side application using local storage
-3. Open the `index.html` file in a web browser
+### Data Management
+- Sortable and filterable table view of all reports
+- Search functionality across all fields
+- Pagination for easy navigation of large datasets
+- CRUD operations (Create, Read, Update, Delete)
 
-For proper functionality, you will need:
-- Modern web browser (Chrome, Firefox, Safari, Edge)
-- Internet connection (for loading map tiles)
-- Location access (optional, for auto-detection of your location)
+### Analytics Dashboard
+- Visual charts for pest distribution by type
+- Severity trends over time
+- Affected crop analysis
+- Treatment effectiveness metrics
+- Key insights and recommendations based on data
 
-## Technologies Used
+### Treatment Guide Library
+- Searchable database of treatment recommendations
+- Detailed treatment methods for common pests and diseases
+- Prevention guidelines
+- Application instructions
+- Effectiveness ratings
 
-- **Frontend**: HTML5, CSS3, JavaScript (vanilla)
-- **Storage**: Browser's localStorage for data persistence
-- **Maps**: Leaflet.js with OpenStreetMap
-- **Charts**: Chart.js for data visualization
-- **Icons**: Font Awesome
+### Alert System
+- Recent high-severity notifications
+- Quick access to critical reports
+- Upcoming treatment reminders (planned feature)
+
+## Technical Implementation
+
+### Frontend
+- HTML5, CSS3, and JavaScript (ES6+)
+- Responsive design for all device sizes
+- Dark/light theme support
+- Interactive UI components
+- Chart.js for data visualization
+- Leaflet.js for mapping functionality
+
+### Backend
+- PHP for server-side processing
+- MySQL database for data storage
+- RESTful API design
+- Image processing and storage
+- Data validation and sanitization
+
+### Database Schema
+- `pest_reports`: Main table for report data
+- `pest_report_images`: Related table for image storage
+- Normalized structure for efficient data management
+
+## Installation
+
+1. Place the `pest_tracker` directory in your web server's document root
+2. Create a MySQL database named `farming` (or update connection settings in PHP files)
+3. The application will automatically create required tables on first use
+4. Ensure the `uploads` directory is writable by the web server
 
 ## Usage Guide
 
-### Adding a New Report
-
-1. Fill out the "Report New Sighting" form with:
-   - Pest/Disease name
-   - Category (Insect, Disease, Other)
-   - Description of what you observed
-   - Affected crops or plants
-   - Severity level
-   - Date observed
-   - Location (use map selector for precise coordinates)
-   - Optional images and treatment information
-
-2. Click "Submit Report" to save the data
+### Reporting a New Pest/Disease
+1. Navigate to the "Report New Pest/Disease" form on the right sidebar
+2. Fill in all required fields (marked with *)
+3. Use the map or geolocation button to set coordinates
+4. Upload images if available
+5. Submit the form
 
 ### Viewing Reports
+- Switch between Map, Table, and Analytics views using the top buttons
+- In Map view, click markers to see details and access full report
+- In Table view, use filters and sorting to find specific reports
+- Click the eye icon to view complete report details
 
-1. Navigate to the "Reports" tab to see all submitted reports
-2. Use the search box to find reports by keyword
-3. Filter reports by category using the dropdown menu
+### Using Analytics
+- Select time period from the dropdown menu
+- View charts showing distribution, trends, and impacts
+- Check key insights for actionable recommendations
 
-### Analyzing Trends
+### Finding Treatment Information
+- Use the Treatment Guide search to find specific pest solutions
+- Click "View Treatment Guide" from any report detail page
+- Browse prevention and treatment recommendations
 
-1. Go to the "Trends & Insights" tab to see charts of pest/disease occurrences over time
-2. View automatically generated insights based on your data
-3. Use this information to identify patterns and plan preventative measures
+## Future Enhancements
 
-### Using the Map
+- Weather data integration
+- Predictive analytics for pest outbreaks
+- Mobile app for field reporting
+- Community data sharing
+- Integration with IoT sensors
+- Automated alerts based on environmental conditions
 
-1. The "Sightings Map" tab shows a geographical view of all reported issues
-2. Click on markers to view details about each report
-3. Different colors indicate different categories of pests or diseases
+## Credits
 
-## Data Privacy
-
-All data is stored locally in your browser's localStorage. Nothing is sent to external servers. If you clear your browser cache/data, the reports will be deleted.
-
-## Extending the Application
-
-Ideas for future development:
-- Server-side storage for sharing data across devices
-- Community features for regional reporting
-- Integration with weather data for correlation analysis
-- Notifications for new outbreaks in your area
-- Export/import functionality for data backup
+- Maps powered by [Leaflet.js](https://leafletjs.com/)
+- Charts by [Chart.js](https://www.chartjs.org/)
+- Icons from [Font Awesome](https://fontawesome.com/)
+- Fonts from [Google Fonts](https://fonts.google.com/)
 
 ## License
 
-MIT License - Feel free to use, modify, and distribute this code for personal or commercial projects. 
+This project is part of the Farming Management System and is licensed under the same terms.
+
+---
+
+© 2023 Crop Monitoring System. All rights reserved. 

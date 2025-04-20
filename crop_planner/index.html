@@ -28,6 +28,12 @@
                 <a href="../index.html"><i class="fas fa-home"></i> Home</a>
                 <a href="../dashboard.html"><i class="fas fa-cloud-sun-rain"></i> Weather Dashboard</a>
                 <a href="../main.html"><i class="fas fa-calculator"></i> Crop Estimation</a>
+                <a href="../pest_tracker/index.html"><i class="fas fa-bug"></i> Pest Tracker</a>
+                <a href="index.html" class="active"><i class="fas fa-sync-alt"></i> Crop Rotation</a>
+                <a href="../profile.html"><i class="fas fa-user-circle"></i> Profile</a>
+                <a href="../login.html" class="btn primary-btn btn-sm">
+                    <i class="fas fa-user-plus"></i> Account
+                </a>
             </nav>
         </header>
 
@@ -67,10 +73,12 @@
                         <div class="form-group">
                             <label for="field-name">Field Name:</label>
                             <input type="text" id="field-name" placeholder="Enter field name">
+                            <div id="field-name-error" class="error-message"></div>
                         </div>
                         <div class="form-group">
                             <label for="field-size">Field Size (acres):</label>
                             <input type="number" id="field-size" placeholder="Size in acres" min="0.1" step="0.1">
+                            <div id="field-size-error" class="error-message"></div>
                         </div>
                         <div class="form-group">
                             <label for="soil-type">Soil Type:</label>
@@ -83,11 +91,25 @@
                                 <option value="chalky">Chalky</option>
                             </select>
                         </div>
-                        <button id="add-field" class="btn primary-btn"><i class="fas fa-plus"></i> Add Field</button>
+                        <div class="form-actions">
+                            <button id="add-field" class="btn primary-btn"><i class="fas fa-plus"></i> Add Field</button>
+                            <button id="suggest-rotation" class="btn secondary-btn"><i class="fas fa-lightbulb"></i> Suggest Rotation</button>
+                        </div>
+                        
+                        <!-- New Section: Saved Fields -->
+                        <div class="saved-fields">
+                            <h4><i class="fas fa-list"></i> Saved Fields</h4>
+                            <div id="saved-fields-container" class="saved-fields-container">
+                                <p class="no-fields-message">No fields added yet.</p>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="rotation-plan">
                         <h3>Rotation Plan</h3>
+                        <div class="rotation-actions">
+                            <button id="suggest-all-seasons" class="btn secondary-btn btn-sm"><i class="fas fa-lightbulb"></i> Suggest All Seasonal Crops</button>
+                        </div>
                         <div class="rotation-years">
                             <button class="year-tab active" data-year="1">Year 1</button>
                             <button class="year-tab" data-year="2">Year 2</button>
@@ -140,7 +162,31 @@
                                     <div class="crop-selector">
                                         <select class="crop-select">
                                             <option value="">Select Crop</option>
-                                            <!-- Same options as above -->
+                                            <optgroup label="Legumes">
+                                                <option value="peas">Peas</option>
+                                                <option value="beans">Beans</option>
+                                                <option value="lentils">Lentils</option>
+                                            </optgroup>
+                                            <optgroup label="Root Vegetables">
+                                                <option value="potatoes">Potatoes</option>
+                                                <option value="carrots">Carrots</option>
+                                                <option value="beets">Beets</option>
+                                            </optgroup>
+                                            <optgroup label="Leafy Greens">
+                                                <option value="lettuce">Lettuce</option>
+                                                <option value="spinach">Spinach</option>
+                                                <option value="kale">Kale</option>
+                                            </optgroup>
+                                            <optgroup label="Grains">
+                                                <option value="wheat">Wheat</option>
+                                                <option value="corn">Corn</option>
+                                                <option value="rice">Rice</option>
+                                            </optgroup>
+                                            <optgroup label="Fruits">
+                                                <option value="tomatoes">Tomatoes</option>
+                                                <option value="peppers">Peppers</option>
+                                                <option value="strawberries">Strawberries</option>
+                                            </optgroup>
                                         </select>
                                     </div>
                                 </div>
@@ -148,11 +194,118 @@
                                     <div class="crop-selector">
                                         <select class="crop-select">
                                             <option value="">Select Crop</option>
-                                            <!-- Same options as above -->
+                                            <optgroup label="Legumes">
+                                                <option value="peas">Peas</option>
+                                                <option value="beans">Beans</option>
+                                                <option value="lentils">Lentils</option>
+                                            </optgroup>
+                                            <optgroup label="Root Vegetables">
+                                                <option value="potatoes">Potatoes</option>
+                                                <option value="carrots">Carrots</option>
+                                                <option value="beets">Beets</option>
+                                            </optgroup>
+                                            <optgroup label="Leafy Greens">
+                                                <option value="lettuce">Lettuce</option>
+                                                <option value="spinach">Spinach</option>
+                                                <option value="kale">Kale</option>
+                                            </optgroup>
+                                            <optgroup label="Grains">
+                                                <option value="wheat">Wheat</option>
+                                                <option value="corn">Corn</option>
+                                                <option value="rice">Rice</option>
+                                            </optgroup>
+                                            <optgroup label="Fruits">
+                                                <option value="tomatoes">Tomatoes</option>
+                                                <option value="peppers">Peppers</option>
+                                                <option value="strawberries">Strawberries</option>
+                                            </optgroup>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="season-slot winter-slot" data-season="winter" data-year="1">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <optgroup label="Legumes">
+                                                <option value="peas">Peas</option>
+                                                <option value="beans">Beans</option>
+                                                <option value="lentils">Lentils</option>
+                                            </optgroup>
+                                            <optgroup label="Root Vegetables">
+                                                <option value="potatoes">Potatoes</option>
+                                                <option value="carrots">Carrots</option>
+                                                <option value="beets">Beets</option>
+                                            </optgroup>
+                                            <optgroup label="Leafy Greens">
+                                                <option value="lettuce">Lettuce</option>
+                                                <option value="spinach">Spinach</option>
+                                                <option value="kale">Kale</option>
+                                            </optgroup>
+                                            <optgroup label="Grains">
+                                                <option value="wheat">Wheat</option>
+                                                <option value="corn">Corn</option>
+                                                <option value="rice">Rice</option>
+                                            </optgroup>
+                                            <optgroup label="Fruits">
+                                                <option value="tomatoes">Tomatoes</option>
+                                                <option value="peppers">Peppers</option>
+                                                <option value="strawberries">Strawberries</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Additional year divs will be added dynamically via JavaScript -->
+                            <div class="season-crops" id="year-2-crops" style="display: none;">
+                                <div class="season-slot spring-slot" data-season="spring" data-year="2">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <optgroup label="Legumes">
+                                                <option value="peas">Peas</option>
+                                                <option value="beans">Beans</option>
+                                                <option value="lentils">Lentils</option>
+                                            </optgroup>
+                                            <optgroup label="Root Vegetables">
+                                                <option value="potatoes">Potatoes</option>
+                                                <option value="carrots">Carrots</option>
+                                                <option value="beets">Beets</option>
+                                            </optgroup>
+                                            <optgroup label="Leafy Greens">
+                                                <option value="lettuce">Lettuce</option>
+                                                <option value="spinach">Spinach</option>
+                                                <option value="kale">Kale</option>
+                                            </optgroup>
+                                            <optgroup label="Grains">
+                                                <option value="wheat">Wheat</option>
+                                                <option value="corn">Corn</option>
+                                                <option value="rice">Rice</option>
+                                            </optgroup>
+                                            <optgroup label="Fruits">
+                                                <option value="tomatoes">Tomatoes</option>
+                                                <option value="peppers">Peppers</option>
+                                                <option value="strawberries">Strawberries</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="season-slot summer-slot" data-season="summer" data-year="2">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <!-- Same options as above -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="season-slot fall-slot" data-season="fall" data-year="2">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <!-- Same options as above -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="season-slot winter-slot" data-season="winter" data-year="2">
                                     <div class="crop-selector">
                                         <select class="crop-select">
                                             <option value="">Select Crop</option>
@@ -161,7 +314,122 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Year 2-4 will be dynamically added via JavaScript -->
+                            <div class="season-crops" id="year-3-crops" style="display: none;">
+                                <div class="season-slot spring-slot" data-season="spring" data-year="3">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <optgroup label="Legumes">
+                                                <option value="peas">Peas</option>
+                                                <option value="beans">Beans</option>
+                                                <option value="lentils">Lentils</option>
+                                            </optgroup>
+                                            <optgroup label="Root Vegetables">
+                                                <option value="potatoes">Potatoes</option>
+                                                <option value="carrots">Carrots</option>
+                                                <option value="beets">Beets</option>
+                                            </optgroup>
+                                            <optgroup label="Leafy Greens">
+                                                <option value="lettuce">Lettuce</option>
+                                                <option value="spinach">Spinach</option>
+                                                <option value="kale">Kale</option>
+                                            </optgroup>
+                                            <optgroup label="Grains">
+                                                <option value="wheat">Wheat</option>
+                                                <option value="corn">Corn</option>
+                                                <option value="rice">Rice</option>
+                                            </optgroup>
+                                            <optgroup label="Fruits">
+                                                <option value="tomatoes">Tomatoes</option>
+                                                <option value="peppers">Peppers</option>
+                                                <option value="strawberries">Strawberries</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="season-slot summer-slot" data-season="summer" data-year="3">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <!-- Same options as above -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="season-slot fall-slot" data-season="fall" data-year="3">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <!-- Same options as above -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="season-slot winter-slot" data-season="winter" data-year="3">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <!-- Same options as above -->
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="season-crops" id="year-4-crops" style="display: none;">
+                                <div class="season-slot spring-slot" data-season="spring" data-year="4">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <optgroup label="Legumes">
+                                                <option value="peas">Peas</option>
+                                                <option value="beans">Beans</option>
+                                                <option value="lentils">Lentils</option>
+                                            </optgroup>
+                                            <optgroup label="Root Vegetables">
+                                                <option value="potatoes">Potatoes</option>
+                                                <option value="carrots">Carrots</option>
+                                                <option value="beets">Beets</option>
+                                            </optgroup>
+                                            <optgroup label="Leafy Greens">
+                                                <option value="lettuce">Lettuce</option>
+                                                <option value="spinach">Spinach</option>
+                                                <option value="kale">Kale</option>
+                                            </optgroup>
+                                            <optgroup label="Grains">
+                                                <option value="wheat">Wheat</option>
+                                                <option value="corn">Corn</option>
+                                                <option value="rice">Rice</option>
+                                            </optgroup>
+                                            <optgroup label="Fruits">
+                                                <option value="tomatoes">Tomatoes</option>
+                                                <option value="peppers">Peppers</option>
+                                                <option value="strawberries">Strawberries</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="season-slot summer-slot" data-season="summer" data-year="4">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <!-- Same options as above -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="season-slot fall-slot" data-season="fall" data-year="4">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <!-- Same options as above -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="season-slot winter-slot" data-season="winter" data-year="4">
+                                    <div class="crop-selector">
+                                        <select class="crop-select">
+                                            <option value="">Select Crop</option>
+                                            <!-- Same options as above -->
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

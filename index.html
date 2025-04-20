@@ -66,28 +66,27 @@
     
     <div class="container">
         <header>
-            <h1><i class="fas fa-seedling"></i> Crop Monitoring System</h1>
+            <div class="back-button" onclick="history.back()">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            <h1><i class="fas fa-seedling"></i> AgriGlance</h1>
             <nav>
                 <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
                 <a href="dashboard.html"><i class="fas fa-map-marker-alt"></i> Weather Dashboard</a>
                 <a href="main.html"><i class="fas fa-calculator"></i> Crop Estimation</a>
+                <a href="pest_tracker/index.html"><i class="fas fa-bug"></i> Pest Tracker</a>
                 <a href="crop_planner/index.html"><i class="fas fa-sync-alt"></i> Crop Rotation</a>
                 <a href="profile.html"><i class="fas fa-user-circle"></i> Profile</a>
+                <a href="login.html" class="btn primary-btn btn-sm">
+                    <i class="fas fa-user-plus"></i> Account
+                </a>
             </nav>
             <div class="header-actions">
-                <div class="auth-buttons" id="auth-buttons">
-                    <a href="login.html" class="btn secondary-btn btn-sm login-btn">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </a>
-                    <a href="login.html" class="btn primary-btn btn-sm signup-btn">
-                        <i class="fas fa-user-plus"></i> Sign Up
-                    </a>
-                </div>
                 <div class="user-profile-icon">
                     <a href="profile.html" title="View Profile">
                         <div class="profile-avatar">
                             <i class="fas fa-user"></i>
-                            <img id="nav-profile-img" src="" alt="Profile" style="display: none;">
+                            <img id="header-profile-img" src="" alt="Profile" style="display: none;">
                         </div>
                     </a>
                 </div>
@@ -165,52 +164,6 @@
                 </div>
             </section>
 
-            <!-- Crop Information Section -->
-            <section class="crop-info-section">
-                <div class="section-divider"></div>
-                <div class="content-wrapper">
-                    <h2><i class="fas fa-leaf accent-green"></i> Crop Information</h2>
-                    <div class="info-grid">
-                        <div class="info-card animate-on-scroll">
-                            <h3><img src="https://cdn-icons-png.flaticon.com/128/3823/3823395.png" class="crop-icon"> Wheat</h3>
-                            <ul>
-                                <li><strong>Growing Season:</strong> 120-150 days</li>
-                                <li><strong>Optimal Temperature:</strong> 21-24°C (70-75°F)</li>
-                                <li><strong>Water Requirement:</strong> 450-650mm per season</li>
-                                <li><strong>Climate:</strong> Temperate, cold semi-arid regions</li>
-                            </ul>
-                        </div>
-                        <div class="info-card animate-on-scroll" data-delay="100">
-                            <h3><img src="https://cdn-icons-png.flaticon.com/128/3823/3823367.png" class="crop-icon"> Rice</h3>
-                            <ul>
-                                <li><strong>Growing Season:</strong> 90-120 days</li>
-                                <li><strong>Optimal Temperature:</strong> 24-30°C (75-86°F)</li>
-                                <li><strong>Water Requirement:</strong> 900-2500mm per season</li>
-                                <li><strong>Climate:</strong> Tropical and subtropical regions</li>
-                            </ul>
-                        </div>
-                        <div class="info-card animate-on-scroll" data-delay="200">
-                            <h3><img src="https://cdn-icons-png.flaticon.com/128/3823/3823364.png" class="crop-icon"> Maize/Corn</h3>
-                            <ul>
-                                <li><strong>Growing Season:</strong> 90-120 days</li>
-                                <li><strong>Optimal Temperature:</strong> 24-30°C (75-86°F)</li>
-                                <li><strong>Water Requirement:</strong> 500-800mm per season</li>
-                                <li><strong>Climate:</strong> Tropical, subtropical, temperate</li>
-                            </ul>
-                        </div>
-                        <div class="info-card animate-on-scroll" data-delay="300">
-                            <h3><img src="https://cdn-icons-png.flaticon.com/128/3823/3823363.png" class="crop-icon"> Potatoes</h3>
-                            <ul>
-                                <li><strong>Growing Season:</strong> 70-120 days</li>
-                                <li><strong>Optimal Temperature:</strong> 18-20°C (64-68°F)</li>
-                                <li><strong>Water Requirement:</strong> 500-700mm per season</li>
-                                <li><strong>Climate:</strong> Cool temperate regions</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             <!-- Weather Impact Section -->
             <section class="weather-impact-section">
                 <div class="section-divider"></div>
@@ -226,7 +179,7 @@
                         </div>
                         
                         <div id="temperature" class="tab-content active">
-                            <div class="info-grid">
+                    <div class="info-grid">
                                 <div class="info-card">
                                     <h3 class="accent-red">High Temperature</h3>
                                     <ul>
@@ -234,6 +187,8 @@
                                         <li>Increases water requirements</li>
                                         <li>May lead to decreased pollination</li>
                                         <li>Can accelerate crop development</li>
+                                        <li><strong>Example:</strong> Wheat yields decrease by 6% for each 1°C rise above optimal temperature</li>
+                                        <li><strong>Management:</strong> Use shade cloth or implement irrigation during peak heat hours</li>
                                     </ul>
                                 </div>
                                 <div class="info-card">
@@ -243,8 +198,14 @@
                                         <li>Slows plant growth and development</li>
                                         <li>Can reduce nutrient uptake</li>
                                         <li>May induce dormancy in certain crops</li>
-                                    </ul>
+                                        <li><strong>Example:</strong> Tomatoes suffer damage at temperatures below 10°C (50°F)</li>
+                                        <li><strong>Management:</strong> Use row covers, wind breaks, or frost protection irrigation</li>
+                            </ul>
                                 </div>
+                            </div>
+                            <div class="weather-data-insight">
+                                <h4><i class="fas fa-lightbulb accent-yellow"></i> Temperature Management Insights</h4>
+                                <p>According to research, temperature stress accounts for approximately 40% of crop yield losses worldwide. Strategic planting dates and variety selection can mitigate up to 60% of these losses in most agricultural systems.</p>
                             </div>
                         </div>
                         
@@ -257,6 +218,8 @@
                                         <li>Can increase disease pressure</li>
                                         <li>May leach nutrients from soil</li>
                                         <li>Can delay field operations</li>
+                                        <li><strong>Example:</strong> Rice crops can tolerate flooding, but most grains suffer yield losses of 25-50% in waterlogged conditions</li>
+                                        <li><strong>Management:</strong> Improve drainage systems and implement raised beds</li>
                                     </ul>
                                 </div>
                                 <div class="info-card">
@@ -266,8 +229,14 @@
                                         <li>May cause drought stress</li>
                                         <li>Can reduce yield potential</li>
                                         <li>May require irrigation interventions</li>
-                                    </ul>
+                                        <li><strong>Example:</strong> Corn yields can decrease by up to 8% per day of water stress during silking stage</li>
+                                        <li><strong>Management:</strong> Implement deficit irrigation or use drought-resistant crop varieties</li>
+                            </ul>
                                 </div>
+                            </div>
+                            <div class="weather-data-insight">
+                                <h4><i class="fas fa-lightbulb accent-yellow"></i> Rainfall Management Insights</h4>
+                                <p>Water harvesting techniques can capture up to 70% of rainfall that would otherwise be lost. Research shows that proper water management can increase farm productivity by 40-60% in rain-fed systems.</p>
                             </div>
                         </div>
                         
@@ -280,6 +249,8 @@
                                         <li>Can reduce transpiration rates</li>
                                         <li>May affect pollination in some crops</li>
                                         <li>Can lead to increased fungal infections</li>
+                                        <li><strong>Example:</strong> Late blight in potatoes spreads 50% faster in high humidity conditions</li>
+                                        <li><strong>Management:</strong> Increase plant spacing and use preventative fungicides</li>
                                     </ul>
                                 </div>
                                 <div class="info-card">
@@ -289,8 +260,14 @@
                                         <li>May cause moisture stress</li>
                                         <li>Can increase water requirements</li>
                                         <li>May affect fruit set in some crops</li>
-                                    </ul>
+                                        <li><strong>Example:</strong> Tomatoes fail to set fruit when humidity drops below 40%</li>
+                                        <li><strong>Management:</strong> Use mulching and misting systems during flowering stages</li>
+                            </ul>
                                 </div>
+                            </div>
+                            <div class="weather-data-insight">
+                                <h4><i class="fas fa-lightbulb accent-yellow"></i> Humidity Management Insights</h4>
+                                <p>Controlled studies show that maintaining optimal humidity levels can reduce fungicide applications by up to 30% while maintaining crop health. Row orientation and spacing can impact humidity levels within the canopy by 15-20%.</p>
                             </div>
                         </div>
                         
@@ -303,6 +280,8 @@
                                         <li>May damage plant structures</li>
                                         <li>Increases transpiration rates</li>
                                         <li>Can affect pollination</li>
+                                        <li><strong>Example:</strong> Corn yields can decrease by 30% when lodging occurs during grain fill</li>
+                                        <li><strong>Management:</strong> Use windbreaks and select shorter, lodging-resistant varieties</li>
                                     </ul>
                                 </div>
                                 <div class="info-card">
@@ -312,8 +291,14 @@
                                         <li>Can help dry foliage after rain</li>
                                         <li>Reduces disease pressure</li>
                                         <li>Helps with CO2 exchange</li>
-                                    </ul>
+                                        <li><strong>Example:</strong> Wind pollinated crops like corn benefit from gentle 5-10 mph breezes</li>
+                                        <li><strong>Management:</strong> Plant wind-pollinated crops in areas with good air circulation</li>
+                            </ul>
                                 </div>
+                            </div>
+                            <div class="weather-data-insight">
+                                <h4><i class="fas fa-lightbulb accent-yellow"></i> Wind Management Insights</h4>
+                                <p>Well-designed windbreaks can protect crops for a distance of up to 10 times the height of the windbreak. Research indicates that strategically placed windbreaks can increase yields by 5-20% in wind-prone areas.</p>
                             </div>
                         </div>
                     </div>
@@ -330,15 +315,27 @@
                             <div class="tab active" data-tab="organizations">Organizations</div>
                             <div class="tab" data-tab="research">Research Papers</div>
                             <div class="tab" data-tab="tools">Farming Tools</div>
+                            <div class="tab" data-tab="case-studies">Case Studies</div>
                         </div>
                         <div class="tab-content active animate-on-scroll" id="organizations">
                             <div class="info-card">
                                 <h3><i class="fas fa-building accent-blue"></i> Agricultural Organizations</h3>
                                 <ul>
-                                    <li><a href="https://www.fao.org/" target="_blank">Food and Agriculture Organization (FAO)</a> - UN agency leading international efforts to defeat hunger</li>
-                                    <li><a href="https://www.cgiar.org/" target="_blank">CGIAR</a> - Global research partnership for a food-secure future</li>
-                                    <li><a href="https://www.ipcc.ch/" target="_blank">IPCC</a> - Intergovernmental Panel on Climate Change</li>
-                                    <li><a href="https://www.usda.gov/" target="_blank">USDA</a> - United States Department of Agriculture</li>
+                                    <li><a href="https://www.fao.org/" target="_blank">Food and Agriculture Organization (FAO)</a> - UN agency leading international efforts to defeat hunger
+                                        <p class="resource-detail">Provides access to FAOSTAT database with worldwide agricultural statistics and climate data since 1961</p>
+                                    </li>
+                                    <li><a href="https://www.cgiar.org/" target="_blank">CGIAR</a> - Global research partnership for a food-secure future
+                                        <p class="resource-detail">Offers free access to drought-tolerant seed varieties that can increase yields by 20-30% under drought conditions</p>
+                                    </li>
+                                    <li><a href="https://www.ipcc.ch/" target="_blank">IPCC</a> - Intergovernmental Panel on Climate Change
+                                        <p class="resource-detail">Provides climate adaptation strategies specific to agricultural regions worldwide</p>
+                                    </li>
+                                    <li><a href="https://www.usda.gov/" target="_blank">USDA</a> - United States Department of Agriculture
+                                        <p class="resource-detail">Maintains the CropScape database with visualizations of crop-specific land cover data for the contiguous U.S.</p>
+                                    </li>
+                                    <li><a href="https://icar.org.in/" target="_blank">ICAR</a> - Indian Council of Agricultural Research
+                                        <p class="resource-detail">Offers region-specific crop varieties and farming practices tailored to Indian agricultural conditions</p>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -346,10 +343,21 @@
                             <div class="info-card">
                                 <h3><i class="fas fa-microscope accent-purple"></i> Recent Research Papers</h3>
                                 <ul>
-                                    <li>"Climate Change Impacts on Global Food Security" - Science Journal</li>
-                                    <li>"Sustainable Intensification in Agriculture" - Nature</li>
-                                    <li>"Precision Agriculture Technologies for Smallholder Farmers" - Agricultural Systems</li>
-                                    <li>"The Future of Food: Environmental Lessons from E-Commerce" - Sustainability</li>
+                                    <li>"Climate Change Impacts on Global Food Security" - Science Journal
+                                        <p class="resource-detail">Key finding: Each 1°C increase in global temperature could reduce wheat yields by 6%, rice by 3.2%, and maize by 7.4%</p>
+                                    </li>
+                                    <li>"Sustainable Intensification in Agriculture" - Nature
+                                        <p class="resource-detail">Shows that integrated pest management reduces pesticide use by up to 50% while maintaining or improving crop yields</p>
+                                    </li>
+                                    <li>"Precision Agriculture Technologies for Smallholder Farmers" - Agricultural Systems
+                                        <p class="resource-detail">Demonstrates how low-cost soil sensors can reduce fertilizer use by 20-30% while increasing yields</p>
+                                    </li>
+                                    <li>"The Future of Food: Environmental Lessons from E-Commerce" - Sustainability
+                                        <p class="resource-detail">Direct farm-to-consumer marketing can increase farmer profits by 40-50% while reducing food miles</p>
+                                    </li>
+                                    <li>"Crop Rotation Effects on Soil Health and Yield Stability" - Soil Biology & Biochemistry
+                                        <p class="resource-detail">Three-year diverse rotations increased yields by 10-15% and reduced fertilizer needs by 15-20%</p>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -357,10 +365,40 @@
                             <div class="info-card">
                                 <h3><i class="fas fa-tools accent-orange"></i> Modern Farming Tools</h3>
                                 <ul>
-                                    <li><strong>Satellite Imagery</strong> - Remote sensing for crop monitoring and field mapping</li>
-                                    <li><strong>IoT Sensors</strong> - Real-time monitoring of soil moisture, temperature, and nutrients</li>
-                                    <li><strong>Drones</strong> - Aerial imagery for crop scouting and analysis</li>
-                                    <li><strong>Machine Learning</strong> - Predictive analytics for yield forecasting and pest detection</li>
+                                    <li><strong>Satellite Imagery</strong> - Remote sensing for crop monitoring and field mapping
+                                        <p class="resource-detail">Services like NASA Harvest provide free satellite data that can detect crop stress 2-3 weeks before visible symptoms appear</p>
+                                    </li>
+                                    <li><strong>IoT Sensors</strong> - Real-time monitoring of soil moisture, temperature, and nutrients
+                                        <p class="resource-detail">Affordable soil moisture sensors can reduce irrigation water use by 30-60% while improving crop quality</p>
+                                    </li>
+                                    <li><strong>Drones</strong> - Aerial imagery for crop scouting and analysis
+                                        <p class="resource-detail">NDVI drone mapping can identify problem areas 7-10 days before they're visible to the human eye</p>
+                                    </li>
+                                    <li><strong>Machine Learning</strong> - Predictive analytics for yield forecasting and pest detection
+                                        <p class="resource-detail">AI-based pest detection apps like Plantix can identify over 500 crop diseases with 95% accuracy from smartphone photos</p>
+                                    </li>
+                                    <li><strong>Mobile Apps</strong> - Farm management and decision support tools
+                                        <p class="resource-detail">Free weather apps like aWhere provide hyperlocal forecasts that are 80% more accurate than general weather services</p>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="tab-content animate-on-scroll" id="case-studies">
+                            <div class="info-card">
+                                <h3><i class="fas fa-flask accent-green"></i> Farmer Success Stories</h3>
+                                <ul>
+                                    <li><strong>Punjab, India:</strong> Rice-Wheat System Transformation
+                                        <p class="resource-detail">Farmers implementing direct seeded rice and zero tillage wheat reduced water use by 30% and increased profits by ₹12,000/hectare</p>
+                                    </li>
+                                    <li><strong>Kenya:</strong> Push-Pull Technology for Pest Management
+                                        <p class="resource-detail">Intercropping maize with desmodium and border planting of napier grass increased yields by 2.5x while controlling stemborer and striga weed</p>
+                                    </li>
+                                    <li><strong>Brazil:</strong> Integrated Crop-Livestock Systems
+                                        <p class="resource-detail">Rotating soybeans with pasture for cattle increased overall farm productivity by 80% while reducing fertilizer needs by 50%</p>
+                                    </li>
+                                    <li><strong>United States:</strong> Cover Crop Innovation Network
+                                        <p class="resource-detail">Farmers using multi-species cover crops reduced erosion by 90% and increased soil organic matter by 1% over five years</p>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -378,24 +416,22 @@
     <!-- Floating AI Chatbot -->
     <div class="chatbot-container">
         <button id="chatbot-toggle" class="chatbot-toggle">
-            <i class="fas fa-comment-dots"></i>
+            <i class="fas fa-robot"></i>
         </button>
         <div id="chatbot-wrapper" class="chatbot-wrapper">
             <div class="chatbot-header">
-                <h3>Farming Assistant</h3>
-                <button id="chatbot-close" class="chatbot-close">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3><i class="fas fa-robot"></i> AI Farming Assistant</h3>
+                <button id="chatbot-close" class="chatbot-close"><i class="fas fa-times"></i></button>
             </div>
             <div id="chatbot-messages" class="chatbot-messages">
                 <div class="bot-message">
                     Hello! I'm your farming assistant. How can I help you today?
                 </div>
             </div>
-            <div class="quick-replies">
+            <div class="chatbot-quick-replies">
                 <span class="quick-reply" data-query="How to manage pests?">Pest Management</span>
                 <span class="quick-reply" data-query="Best crops for clay soil?">Clay Soil Crops</span>
-                <span class="quick-reply" data-query="How to control aphids organically?">Organic Aphid Control</span>
+                <span class="quick-reply" data-query="Organic fertilizers?">Organic Fertilizers</span>
                 <span class="quick-reply" data-query="Best irrigation methods?">Irrigation</span>
             </div>
             <div class="chatbot-input-container">

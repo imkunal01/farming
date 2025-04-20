@@ -72,24 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
             profilePictureInput.addEventListener('change', handleProfilePictureUpload);
         }
 
-        // Theme toggle (checkbox)
-        if (darkModeToggle) {
-            darkModeToggle.checked = localStorage.getItem('theme') === 'dark';
-            darkModeToggle.addEventListener('change', function(e) {
-                const isDark = e.target.checked;
-                setTheme(isDark ? 'dark' : 'light');
-            });
-        }
-
-        // Theme toggle button
-        if (themeToggleBtn) {
-            themeToggleBtn.addEventListener('click', function() {
-                const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-                setTheme(newTheme);
-            });
-        }
-
         // Delete account
         if (deleteAccountBtn) {
             deleteAccountBtn.addEventListener('click', () => {
@@ -418,58 +400,77 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize theme settings
     function initThemeSettings() {
-        // Apply saved theme on page load
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        setTheme(savedTheme);
-    }
+        // Set initial state of the settings toggle based on current theme
+        if (darkModeToggle) {
+            darkModeToggle.checked = document.documentElement.getAttribute('data-theme') === 'dark';
+        }
+        
+        // Add listener to settings toggle
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('change', function(e) {
+                const newTheme = e.target.checked ? 'dark' : 'light';
+                setTheme(newTheme);
+            });
+        }
 
-    // Set theme
+        // Add listener to floating theme button
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                setTheme(newTheme);
+            });
+        }
+    }
+    
+    // Centralized function to set the theme
     function setTheme(theme) {
+        // 1. Set attribute on HTML element
         document.documentElement.setAttribute('data-theme', theme);
+        
+        // 2. Save to localStorage
         localStorage.setItem('theme', theme);
         
-        // Update theme toggle icon
-        if (themeToggleBtn) {
-            const icon = themeToggleBtn.querySelector('i');
-            if (icon) {
-                if (theme === 'dark') {
-                    icon.classList.remove('fa-sun');
-                    icon.classList.add('fa-moon');
-                } else {
-                    icon.classList.remove('fa-moon');
-                    icon.classList.add('fa-sun');
-                }
+        // 3. Update the floating theme toggle button icon
+        const themeIcon = themeToggleBtn ? themeToggleBtn.querySelector('i') : null;
+        if (themeIcon) {
+            if (theme === 'dark') {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            } else {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
             }
         }
         
-        // Update theme toggle checkbox
+        // 4. Update the settings dark mode toggle checkbox
         if (darkModeToggle) {
-            darkModeToggle.checked = theme === 'dark';
+            darkModeToggle.checked = (theme === 'dark');
         }
-
-        // Dispatch event for other components that might need to know theme changed
-        window.dispatchEvent(new Event('themechange'));
+        
+        // 5. Dispatch custom event for other components (like chatbot)
+        const event = new CustomEvent('themechange', { detail: { theme: theme } });
+        window.dispatchEvent(event);
     }
 
     // Change tab
     function changeTab(tabId) {
-        // Deactivate all tabs
+        // Update active tab button
         profileTabs.forEach(tab => {
             tab.classList.remove('active');
+            if (tab.getAttribute('data-tab') === tabId) {
+                tab.classList.add('active');
+            }
         });
-        
-        // Activate selected tab
-        const selectedTab = document.querySelector(`.profile-tab[data-tab="${tabId}"]`);
-        if (selectedTab) selectedTab.classList.add('active');
-        
-        // Hide all tab contents
+
+        // Show the correct tab content
         tabContents.forEach(content => {
             content.classList.remove('active');
+            // Ensure the content ID matches the expected format (e.g., 'profile-tab')
+            if (content.id === `${tabId}-tab`) { 
+                content.classList.add('active');
+            }
         });
-        
-        // Show selected tab content
-        const selectedContent = document.getElementById(`${tabId}-tab`);
-        if (selectedContent) selectedContent.classList.add('active');
     }
 
     // Export user data

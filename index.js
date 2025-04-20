@@ -17,19 +17,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize scroll animations
     initScrollAnimations();
     
-    // Initialize tabs
     initTabs();
     
-    // Theme toggle functionality
+    
     const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
         themeToggle.addEventListener('click', toggleTheme);
         
-        // Set initial icon state
         updateThemeIcon();
     }
     
-    // Initialize theme from localStorage
+
     function initTheme() {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
@@ -37,18 +35,79 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Toggle theme
+   
     function toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         
+        // Set theme on HTML element
         document.documentElement.setAttribute('data-theme', newTheme);
+        
+        // Save to localStorage
         localStorage.setItem('theme', newTheme);
         
+        // Update the theme icon
         updateThemeIcon();
+        
+        // Notify other components about theme change
+        window.dispatchEvent(new StorageEvent('storage', {
+            key: 'theme',
+            newValue: newTheme
+        }));
+        
+        // Also trigger a custom event for theme change
+        window.dispatchEvent(new CustomEvent('themechange', {
+            detail: { theme: newTheme }
+        }));
+        
+        // Update chatbot theme if it exists on this page
+        const chatbotWrapper = document.getElementById('chatbot-wrapper');
+        if (chatbotWrapper) {
+            if (newTheme === 'dark') {
+                chatbotWrapper.classList.add('dark-theme');
+                
+                // Apply dark theme to messages
+                const userMessages = document.querySelectorAll('.user-message');
+                const botMessages = document.querySelectorAll('.bot-message');
+                
+                userMessages.forEach(msg => {
+                    msg.style.backgroundColor = '#4ecca3'; // primary-color in dark theme
+                    msg.style.color = 'white';
+                });
+                
+                botMessages.forEach(msg => {
+                    // Skip typing indicator
+                    if (!msg.classList.contains('typing-indicator')) {
+                        msg.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                        msg.style.color = '#e6e6e6'; // text-color in dark theme
+                        msg.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+                    }
+                });
+            } else {
+                chatbotWrapper.classList.remove('dark-theme');
+                
+                // Reset messages to light theme
+                const userMessages = document.querySelectorAll('.user-message');
+                const botMessages = document.querySelectorAll('.bot-message');
+                
+                userMessages.forEach(msg => {
+                    msg.style.backgroundColor = '';
+                    msg.style.color = '';
+                });
+                
+                botMessages.forEach(msg => {
+                    if (!msg.classList.contains('typing-indicator')) {
+                        msg.style.backgroundColor = '';
+                        msg.style.color = '';
+                        msg.style.border = '';
+                    }
+                });
+            }
+        }
     }
     
-    // Update theme icon
+  
+    
     function updateThemeIcon() {
         const themeIcon = document.querySelector('.theme-toggle i');
         if (themeIcon) {

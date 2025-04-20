@@ -30,9 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (targetTab === 'login') {
-                document.getElementById('loginForm').classList.add('active');
+                document.getElementById('login-form').classList.add('active');
             } else if (targetTab === 'register') {
-                document.getElementById('registerForm').classList.add('active');
+                document.getElementById('register-form').classList.add('active');
             }
         });
     });
@@ -40,39 +40,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // Toggle password visibility
     togglePasswordButtons.forEach(button => {
         button.addEventListener('click', () => {
-            const targetId = button.getAttribute('data-target');
-            const passwordInput = document.getElementById(targetId);
+            const input = button.previousElementSibling;
             const icon = button.querySelector('i');
             
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
+            if (input.type === 'password') {
+                input.type = 'text';
                 icon.classList.remove('fa-eye');
                 icon.classList.add('fa-eye-slash');
             } else {
-                passwordInput.type = 'password';
+                input.type = 'password';
                 icon.classList.remove('fa-eye-slash');
                 icon.classList.add('fa-eye');
             }
         });
     });
     
-    // Mock user data for demonstration
-    const mockUsers = [
-        {
-            email: 'demo@example.com',
-            password: 'Password123',
-            firstName: 'Demo',
-            lastName: 'User',
-            userType: 'farmer'
-        }
-    ];
-    
     // Login form submission
-    loginForm.addEventListener('submit', function(e) {
+    const loginFormElement = document.getElementById('login-form').querySelector('form');
+    loginFormElement.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
         const rememberMe = document.getElementById('remember').checked;
         
         // Basic validation
@@ -81,46 +70,55 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Check credentials against mock data
-        const user = mockUsers.find(u => u.email === email && u.password === password);
+        // Create form data
+        const formData = new FormData();
+        formData.append('action', 'login');
+        formData.append('email', email);
+        formData.append('password', password);
         
-        if (user) {
-            // Store user data in localStorage
-            const userData = {
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                userType: user.userType,
-                isLoggedIn: true
-            };
-            
-            localStorage.setItem('user', JSON.stringify(userData));
-            
-            showToast('Login successful! Redirecting...', 'success');
-            
-            // Redirect to dashboard after a short delay
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
-        } else {
-            showToast('Invalid email or password', 'error');
-        }
+        // Send login request to server
+        fetch('login.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Store user data in localStorage if remember me is checked
+                if (rememberMe) {
+                    localStorage.setItem('user_email', email);
+                }
+                
+                showToast('Login successful! Redirecting...', 'success');
+                
+                // Redirect to dashboard after a short delay
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+            } else {
+                showToast(data.message || 'Login failed', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Login error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+        });
     });
     
     // Register form submission
-    registerForm.addEventListener('submit', function(e) {
+    const registerFormElement = document.getElementById('register-form').querySelector('form');
+    registerFormElement.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const firstName = document.getElementById('firstName').value;
-        const lastName = document.getElementById('lastName').value;
-        const email = document.getElementById('registerEmail').value;
-        const password = document.getElementById('registerPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        const userType = document.getElementById('userType').value;
+        const name = document.getElementById('register-name').value;
+        const email = document.getElementById('register-email').value;
+        const userType = document.getElementById('user-type').value;
+        const password = document.getElementById('register-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
         const terms = document.getElementById('terms').checked;
         
         // Basic validation
-        if (!firstName || !lastName || !email || !password || !confirmPassword || !userType) {
+        if (!name || !email || !userType || !password || !confirmPassword) {
             showToast('Please fill in all fields', 'error');
             return;
         }
@@ -135,53 +133,51 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Check if email already exists
-        if (mockUsers.some(u => u.email === email)) {
-            showToast('This email is already registered', 'error');
-            return;
-        }
+        // Create form data
+        const formData = new FormData();
+        formData.append('action', 'register');
+        formData.append('name', name);
+        formData.append('email', email);
+        formData.append('user_type', userType);
+        formData.append('password', password);
+        formData.append('confirm_password', confirmPassword);
         
-        // Create new user (in a real app, this would be a server call)
-        const newUser = {
-            email,
-            password,
-            firstName,
-            lastName,
-            userType
-        };
-        
-        // Add to mock users (simulating database storage)
-        mockUsers.push(newUser);
-        
-        // Store user data in localStorage
-        const userData = {
-            email: newUser.email,
-            firstName: newUser.firstName,
-            lastName: newUser.lastName,
-            userType: newUser.userType,
-            isLoggedIn: true
-        };
-        
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        showToast('Account created successfully! Redirecting...', 'success');
-        
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1500);
+        // Send registration request to server
+        fetch('login.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Account created successfully! Redirecting...', 'success');
+                
+                // Redirect to dashboard after a short delay
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+            } else {
+                showToast(data.message || 'Registration failed', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Registration error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+        });
     });
     
     // Handle forgot password
     forgotPasswordLink.addEventListener('click', function(e) {
         e.preventDefault();
-        forgotPasswordModal.style.display = 'flex';
+        resetPasswordModal.style.display = 'flex';
     });
     
     // Close modal when clicking the X
-    modalClose.addEventListener('click', function() {
-        forgotPasswordModal.style.display = 'none';
-    });
+    if (modalClose) {
+        modalClose.addEventListener('click', function() {
+            forgotPasswordModal.style.display = 'none';
+        });
+    }
     
     // Close modal when clicking outside the content
     window.addEventListener('click', function(e) {
@@ -191,53 +187,60 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Handle forgot password form submission
-    forgotPasswordForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('resetEmail').value;
-        
-        if (!email) {
-            showToast('Please enter your email', 'error');
-            return;
-        }
-        
-        // Check if email exists in mock data
-        const userExists = mockUsers.some(u => u.email === email);
-        
-        if (userExists) {
-            showToast('Password reset link sent to your email', 'success');
-            forgotPasswordModal.style.display = 'none';
-        } else {
-            showToast('Email not found in our records', 'error');
-        }
-    });
+    if (forgotPasswordForm) {
+        forgotPasswordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('reset-email').value;
+            
+            if (!email) {
+                showToast('Please enter your email', 'error');
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('action', 'reset_password');
+            formData.append('email', email);
+            
+            // Send password reset request to server
+            fetch('login.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Password reset link sent to your email', 'success');
+                    resetPasswordModal.style.display = 'none';
+                } else {
+                    showToast(data.message || 'Password reset failed', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Password reset error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            });
+        });
+    }
     
     // Theme toggle
-    const themeToggleBtn = document.querySelector('.theme-toggle-btn');
-    themeToggleBtn.addEventListener('click', toggleTheme);
-    
-    // Social login buttons (mock functionality)
-    const socialButtons = document.querySelectorAll('.social-btn');
-    socialButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const provider = this.classList.contains('google') ? 'Google' : 'Facebook';
-            console.log(`Attempting to login with ${provider}`);
-            showToast(`${provider} login initiated`, 'info');
-            
-            // In a real app, this would redirect to OAuth provider
-        });
-    });
+    const themeToggleBtn = document.querySelector('.theme-toggle');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', toggleTheme);
+    }
     
     // Check if user is already logged in
-    const checkLoggedInUser = () => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (user && user.isLoggedIn) {
-            window.location.href = 'index.html';
-        }
-    };
-    
-    // Call the function on page load
-    checkLoggedInUser();
+    fetch('login.php?action=status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.logged_in) {
+                window.location.href = 'index.html';
+            }
+        })
+        .catch(error => {
+            console.error('Session check error:', error);
+        });
 });
 
 // Theme functions
@@ -251,52 +254,69 @@ function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     
+    // Update data-theme attribute on the HTML element
     document.documentElement.setAttribute('data-theme', newTheme);
+    
+    // Save theme preference to localStorage
     localStorage.setItem('theme', newTheme);
+    
+    // Update theme icon
     updateThemeIcon(newTheme);
+    
+    // Notify other components about theme change
+    // This helps components like the chatbot know when the theme has changed
+    window.dispatchEvent(new StorageEvent('storage', {
+        key: 'theme',
+        newValue: newTheme
+    }));
+    
+    // Also trigger a custom event for theme change
+    window.dispatchEvent(new CustomEvent('themechange', {
+        detail: { theme: newTheme }
+    }));
 }
 
 function updateThemeIcon(theme) {
-    const themeIcon = document.querySelector('.theme-toggle-btn i');
-    if (theme === 'light') {
-        themeIcon.className = 'fas fa-moon';
-    } else {
-        themeIcon.className = 'fas fa-sun';
+    const themeIcon = document.querySelector('.theme-toggle i');
+    if (themeIcon) {
+        if (theme === 'light') {
+            themeIcon.className = 'fas fa-moon';
+        } else {
+            themeIcon.className = 'fas fa-sun';
+        }
     }
 }
 
 // Toast notification
 function showToast(message, type = 'success') {
-    const toastContent = toast.querySelector('.toast-content');
-    const toastMessage = toast.querySelector('.toast-message');
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    
+    const toastMessage = document.getElementById('toast-message');
     const toastIcon = toast.querySelector('.toast-icon');
-    const toastProgress = toast.querySelector('.toast-progress');
     
-    // Set message and type
-    toastMessage.textContent = message;
-    
-    // Set appropriate icon and color
-    if (type === 'success') {
-        toastIcon.className = 'fas fa-check-circle toast-icon success';
-        toastContent.style.backgroundColor = 'var(--success-color, #28a745)';
-    } else if (type === 'error') {
-        toastIcon.className = 'fas fa-exclamation-circle toast-icon error';
-        toastContent.style.backgroundColor = 'var(--error-color, #dc3545)';
-    } else if (type === 'warning') {
-        toastIcon.className = 'fas fa-exclamation-triangle toast-icon warning';
-        toastContent.style.backgroundColor = 'var(--warning-color, #ffc107)';
-    } else if (type === 'info') {
-        toastIcon.className = 'fas fa-info-circle toast-icon info';
-        toastContent.style.backgroundColor = 'var(--info-color, #17a2b8)';
+    if (toastMessage) {
+        toastMessage.textContent = message;
     }
     
-    // Show toast
-    toast.classList.add('show');
-    
-    // Reset and start progress bar animation
-    toastProgress.style.animation = 'none';
-    toastProgress.offsetHeight; // Trigger reflow
-    toastProgress.style.animation = 'progress 3s linear forwards';
+    // Set appropriate icon and color
+    if (toastIcon) {
+        if (type === 'success') {
+            toastIcon.className = 'fas fa-check-circle toast-icon';
+            toast.className = 'toast show success';
+        } else if (type === 'error') {
+            toastIcon.className = 'fas fa-exclamation-circle toast-icon';
+            toast.className = 'toast show error';
+        } else if (type === 'warning') {
+            toastIcon.className = 'fas fa-exclamation-triangle toast-icon';
+            toast.className = 'toast show warning';
+        } else if (type === 'info') {
+            toastIcon.className = 'fas fa-info-circle toast-icon';
+            toast.className = 'toast show info';
+        }
+    } else {
+        toast.className = 'toast show ' + type;
+    }
     
     // Auto-hide toast after 3 seconds
     setTimeout(() => {
