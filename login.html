@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | AgriGlance</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <div class="back-button" onclick="history.back()">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            <a href="index.html" class="logo">
+                <img src="Logo2.png" alt="AgriGlance Logo">
+                <h1>AgriGlance</h1>
+            </a>
+            <button class="theme-toggle" id="theme-toggle">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="login-container">
+            <div class="login-tabs">
+                <div class="login-tab active" data-tab="login">Login</div>
+                <div class="login-tab" data-tab="register">Register</div>
+            </div>
+            
+            <div class="login-form-wrapper active" id="login-form">
+                <h2 class="form-title">Welcome Back!</h2>
+                <form action="login.php" method="post">
+                    <div class="input-group">
+                        <label for="login-email">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" id="login-email" name="email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="login-password">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="login-password" name="password" required>
+                            <button type="button" class="toggle-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember" class="checkbox-label">Remember me</label>
+                    </div>
+                    
+                    <button type="submit" class="login-button" name="login">Login</button>
+                    
+                    <div class="forgot-password">
+                        <a href="#" id="forgot-password-link" onclick="console.log('Forgot password link clicked directly')">Forgot your password?</a>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="login-form-wrapper" id="register-form">
+                <h2 class="form-title">Create an Account</h2>
+                <form action="login.php" method="post">
+                    <div class="input-group">
+                        <label for="register-name">Full Name</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user input-icon"></i>
+                            <input type="text" id="register-name" name="name" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="register-email">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" id="register-email" name="email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="user-type">User Type</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-users input-icon"></i>
+                            <select id="user-type" name="user_type" required>
+                                <option value="">Select user type</option>
+                                <option value="regular">regular</option>
+                                <option value="expert">expert</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="register-password">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="register-password" name="password" required>
+                            <button type="button" class="toggle-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="confirm-password">Confirm Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="confirm-password" name="confirm_password" required>
+                            <button type="button" class="toggle-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="terms-privacy">
+                        <input type="checkbox" id="terms" name="terms" required>
+                        <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+                    </div>
+                    
+                    <button type="submit" class="login-button" name="register">Create Account</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; AgriGlance. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Password Reset Modal -->
+    <div class="modal" id="reset-password-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Reset Password</h3>
+                <button class="close-modal" id="close-reset-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="reset-password-form">
+                <div class="input-group">
+                    <label for="reset-email">Email</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="reset-email" name="email" required>
+                    </div>
+                    <p class="instruction-text">Enter your email address and we'll send you a link to reset your password.</p>
+                </div>
+                <button type="submit" class="login-button">Send Reset Link</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle toast-icon"></i>
+        <span id="toast-message">Operation successful!</span>
+    </div>
+
+    <script src="login.js"></script>
+    
+    <!-- Testing script -->
+    <script>
+        // Add fallback for debugging modal issues
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM fully loaded");
+            const forgotLink = document.getElementById('forgot-password-link');
+            const resetModal = document.getElementById('reset-password-modal');
+            
+            if (forgotLink) {
+                console.log("Forgot password link found by test script");
+                // Add a backup event listener
+                forgotLink.addEventListener('click', function(e) {
+                    console.log("Forgot password clicked - from test script");
+                    e.preventDefault();
+                    if (resetModal) {
+                        resetModal.classList.add('show');
+                    } else {
+                        console.error("Modal not found!");
+                    }
+                });
+            } else {
+                console.error("Could not find forgot password link by ID");
+            }
+        });
+    </script>
+</body>
+</html> 
