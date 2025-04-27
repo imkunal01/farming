@@ -24,12 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'soybean': 2.8,
         'potato': 25.0,
         'tomato': 35.0,
-        'onion': 40.0,
-        'garlic': 20.0,
-        'ginger': 15.0,
-        'chilli': 10.0,
-        'beans': 12.0,
-        'cucumber': 18.0
+        'onion': 40.0
     };
     
     // Soil type impact factors
@@ -240,35 +235,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Show success message
         showToast('Estimate saved successfully!', 'success');
-        
-        // Optional: Save to server using AJAX
-        sendResultToServer(results);
-    }
-    
-    // Send result to server (optional)
-    function sendResultToServer(results) {
-        // You can implement this function to send data to your server
-        // using fetch or XMLHttpRequest if you want to store results in a database
-        
-        // Example using fetch:
-        fetch('save_estimate.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(results),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Result saved to server successfully');
-            } else {
-                console.error('Failed to save result to server');
-            }
-        })
-        .catch(error => {
-            console.error('Error saving result to server:', error);
-        });
     }
     
     // Show toast notification

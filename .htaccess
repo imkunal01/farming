@@ -1,8 +1,0 @@
-# Make landing.html the default page
-DirectoryIndex landing.html index.html index.php
-
-# Or use redirection if needed
-#<IfModule mod_rewrite.c>
-#    RewriteEngine On
-#    RewriteRule ^$ landing.html [L]
-#</IfModule> 

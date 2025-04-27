@@ -60,132 +60,33 @@
         <main>
             <section class="form-container">
                 <h2><i class="fas fa-clipboard-list"></i> Enter Crop Data</h2>
-                <div class="action-links">
-                    <a href="saved_estimates.php" class="btn secondary-btn"><i class="fas fa-history"></i> View Saved Estimates</a>
-                </div>
-                <form id="crop-form">
+                <form action="estimates.php" method="POST">
                     <div class="form-group">
-                        <label for="crop-type"><i class="fas fa-seedling"></i> Crop Type:</label>
-                        <select id="crop-type" required>
-                            <option value="">Select crop</option>
-                            <option value="wheat">Wheat</option>
-                            <option value="rice">Rice</option>
-                            <option value="maize">Maize</option>
-                            <option value="barley">Barley</option>
-                            <option value="sugarcane">Sugarcane</option>
-                            <option value="cotton">Cotton</option>
-                            <option value="soybean">Soybean</option>
-                            <option value="potato">Potato</option>
-                            <option value="tomato">Tomato</option>
-                            <option value="onion">Onion</option>
-                            <option value="garlic">Garlic</option>
-                            <option value="ginger">Ginger</option>
-                            <option value="chilli">Chilli</option>
-                            <option value="beans">Beans</option>
-                            <option value="cucumber">Cucumber</option>
-                            
-                        </select>
+                        <label for="crop_name"><i class="fas fa-seedling"></i> Crop Name:</label>
+                        <input type="text" id="crop_name" name="crop_name" placeholder="Enter crop name" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="land-area"><i class="fas fa-draw-polygon"></i> Land Area (in hectares):</label>
-                        <input type="number" id="land-area" step="0.01" min="0.01" placeholder="Enter area size" required>
+                        <label for="area"><i class="fas fa-draw-polygon"></i> Area (in acres):</label>
+                        <input type="number" id="area" name="area" step="0.01" min="0.01" placeholder="Enter area size" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="soil-type"><i class="fas fa-mountain"></i> Soil Type:</label>
-                        <select id="soil-type" required>
-                            <option value="">Select soil type</option>
-                            <option value="loamy">Loamy</option>
-                            <option value="sandy">Sandy</option>
-                            <option value="clay">Clay</option>
-                            <option value="silt">Silt</option>
-                            <option value="chalky">Chalky</option>
-                            <option value="peaty">Peaty</option>
-                        </select>
+                        <label for="yield"><i class="fas fa-chart-line"></i> Expected Yield per Acre (in tons):</label>
+                        <input type="number" id="yield" name="yield" step="0.01" min="0.01" placeholder="Enter expected yield" required>
                     </div>
 
-                    <div class="form-group">
-                        <label for="irrigation"><i class="fas fa-tint"></i> Irrigation Method:</label>
-                        <select id="irrigation" required>
-                            <option value="">Select irrigation method</option>
-                            <option value="drip">Drip Irrigation</option>
-                            <option value="sprinkler">Sprinkler</option>
-                            <option value="flood">Flood Irrigation</option>
-                            <option value="furrow">Furrow Irrigation</option>
-                            <option value="rainFed">Rain-fed</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="pest-factor"><i class="fas fa-bug"></i> Pest Pressure:</label>
-                        <select id="pest-factor" required>
-                            <option value="">Select pest pressure</option>
-                            <option value="none">None</option>
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="fertilizer"><i class="fas fa-flask"></i> Fertilizer Application:</label>
-                        <select id="fertilizer" required>
-                            <option value="">Select fertilizer level</option>
-                            <option value="none">None</option>
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="season"><i class="fas fa-sun"></i> Growing Season:</label>
-                        <select id="season" required>
-                            <option value="">Select season</option>
-                            <option value="winter">Winter</option>
-                            <option value="spring">Spring</option>
-                            <option value="summer">Summer</option>
-                            <option value="autumn">Autumn</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="experience"><i class="fas fa-user-clock"></i> Farming Experience (years):</label>
-                        <input type="number" id="experience" min="0" placeholder="Years of experience" required>
-                    </div>
+                    <!-- Hidden fields for location -->
+                    <input type="hidden" id="lat" name="lat">
+                    <input type="hidden" id="lng" name="lng">  
 
                     <button type="submit" class="btn primary-btn"><i class="fas fa-calculator"></i> Calculate Estimate</button>
                 </form>
             </section>
 
-            <section id="result-container" class="result-container" style="display: none;">
-                <h2><i class="fas fa-chart-bar"></i> Yield Estimation Result</h2>
-                <div class="result-details">
-                    <div class="result-item">
-                        <strong><i class="fas fa-seedling"></i> Crop:</strong> <span id="result-crop"></span>
-                    </div>
-                    <div class="result-item">
-                        <strong><i class="fas fa-draw-polygon"></i> Land Area:</strong> <span id="result-area"></span> hectares
-                    </div>
-                    <div class="result-item">
-                        <strong><i class="fas fa-chart-line"></i> Estimated Yield:</strong> <span id="result-yield"></span> tons/hectare
-                    </div>
-                    <div class="result-item highlight">
-                        <strong><i class="fas fa-tractor"></i> Total Estimated Production:</strong> <span id="result-total"></span> tons
-                    </div>
-                    <div class="result-item">
-                        <strong><i class="fas fa-star"></i> Quality Factor:</strong> <span id="result-quality"></span>
-                    </div>
-                    <div class="result-item">
-                        <strong><i class="fas fa-percentage"></i> Confidence Level:</strong> <span id="result-confidence"></span>
-                    </div>
-                </div>
-                
-                <div class="action-buttons">
-                    <button id="recalculate-btn" class="btn secondary-btn"><i class="fas fa-redo"></i> Recalculate</button>
-                    <button id="save-result-btn" class="btn primary-btn"><i class="fas fa-save"></i> Save Result</button>
-                </div>
+            <section class="result-container">
+                <h2><i class="fas fa-chart-bar"></i> Estimation Result</h2>
+                <p>Submit the form to see your crop estimation results.</p>
             </section>
         </main>
     </div>

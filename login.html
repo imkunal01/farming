@@ -62,7 +62,7 @@
                     <button type="submit" class="login-button" name="login">Login</button>
                     
                     <div class="forgot-password">
-                        <a href="#" id="forgot-password-link" onclick="console.log('Forgot password link clicked directly')">Forgot your password?</a>
+                        <a href="#" id="forgot-password-link">Forgot your password?</a>
                     </div>
                 </form>
             </div>
@@ -134,7 +134,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; AgriGlance. All rights reserved.</p>
+            <p>&copy; 2023 Crop Monitoring System. All rights reserved.</p>
         </div>
     </footer>
 
@@ -152,9 +152,8 @@
                     <label for="reset-email">Email</label>
                     <div class="input-wrapper">
                         <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" id="reset-email" name="email" required>
+                        <input type="email" id="reset-email" name="reset_email" required>
                     </div>
-                    <p class="instruction-text">Enter your email address and we'll send you a link to reset your password.</p>
                 </div>
                 <button type="submit" class="login-button">Send Reset Link</button>
             </form>
@@ -168,31 +167,5 @@
     </div>
 
     <script src="login.js"></script>
-    
-    <!-- Testing script -->
-    <script>
-        // Add fallback for debugging modal issues
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM fully loaded");
-            const forgotLink = document.getElementById('forgot-password-link');
-            const resetModal = document.getElementById('reset-password-modal');
-            
-            if (forgotLink) {
-                console.log("Forgot password link found by test script");
-                // Add a backup event listener
-                forgotLink.addEventListener('click', function(e) {
-                    console.log("Forgot password clicked - from test script");
-                    e.preventDefault();
-                    if (resetModal) {
-                        resetModal.classList.add('show');
-                    } else {
-                        console.error("Modal not found!");
-                    }
-                });
-            } else {
-                console.error("Could not find forgot password link by ID");
-            }
-        });
-    </script>
 </body>
 </html> 

@@ -527,16 +527,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Clear any stored data
-                    localStorage.removeItem('user_email');
-                    
-                    // Show success message
-                    showToast('You have been logged out successfully', 'success');
-                    
-                    // Redirect to login page after a short delay
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 1500);
+                    // Redirect to login page
+                    window.location.href = 'login.html';
                 } else {
                     showToast(data.message || 'Failed to logout', 'error');
                 }

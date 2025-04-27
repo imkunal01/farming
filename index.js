@@ -179,10 +179,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update the auth buttons based on login status
     function updateAuthButtons() {
-        const authButtonsContainer = document.querySelector('a.btn.primary-btn.btn-sm');
+        const authButtonsContainer = document.getElementById('auth-buttons');
         const profileIcon = document.querySelector('.user-profile-icon');
-        const userMenu = document.getElementById('user-menu');
-        const logoutBtn = document.getElementById('logout-btn');
         
         if (!authButtonsContainer && !profileIcon) return;
         
@@ -200,146 +198,60 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (profileIcon) {
                     profileIcon.style.display = 'block';
                     
-                    // Show user menu when clicking on profile icon
-                    profileIcon.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        if (userMenu) {
-                            userMenu.style.display = userMenu.style.display === 'block' ? 'none' : 'block';
-                        }
-                    });
+                    // Update profile image if available
+                    const profileImg = profileIcon.querySelector('img');
+                    const profileIconPlaceholder = profileIcon.querySelector('i');
                     
-                    // Hide menu when clicking elsewhere
-                    document.addEventListener('click', function(e) {
-                        if (!profileIcon.contains(e.target) && userMenu && userMenu.style.display === 'block') {
-                            userMenu.style.display = 'none';
+                    if (data.user.profile_image && profileImg) {
+                        profileImg.src = data.user.profile_image;
+                        profileImg.style.display = 'block';
+                        
+                        if (profileIconPlaceholder) {
+                            profileIconPlaceholder.style.display = 'none';
                         }
-                    });
-                }
-                
-                // Set up logout button
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function() {
-                        logoutUser();
-                    });
-                }
-                
-                if (userMenu) {
-                    userMenu.style.display = 'none'; // Initialize as hidden
-                }
-                
-                // Update header text to show logged in status
-                const headerProfileImg = document.getElementById('header-profile-img');
-                if (headerProfileImg && data.user && data.user.profile_image) {
-                    headerProfileImg.src = data.user.profile_image;
-                    headerProfileImg.style.display = 'block';
-                    // Hide default icon
-                    const defaultIcon = profileIcon.querySelector('i');
-                    if (defaultIcon) {
-                        defaultIcon.style.display = 'none';
                     }
                 }
             } else {
-                // User not logged in
+                // User is not logged in
                 if (authButtonsContainer) {
-                    authButtonsContainer.style.display = 'inline-flex';
-                    authButtonsContainer.innerHTML = '<i class="fas fa-user-plus"></i> Login / Register';
-                    authButtonsContainer.href = 'login.html';
+                    authButtonsContainer.innerHTML = `
+                        <a href="login.html" class="btn secondary-btn btn-sm login-btn">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                        <a href="login.html" class="btn primary-btn btn-sm signup-btn">
+                            <i class="fas fa-user-plus"></i> Sign Up
+                        </a>
+                    `;
+                    authButtonsContainer.style.display = 'flex';
                 }
                 
+                // Hide profile icon
                 if (profileIcon) {
                     profileIcon.style.display = 'none';
-                }
-                
-                if (userMenu) {
-                    userMenu.style.display = 'none';
                 }
             }
         })
         .catch(error => {
             console.error('Error checking login status:', error);
-        });
-    }
-    
-    // Logout user
-    function logoutUser() {
-        // Send logout request to server
-        fetch('login.php?action=logout')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Clear any stored data
-                    localStorage.removeItem('user_email');
-                    
-                    // Show toast message
-                    showToast('You have been logged out successfully', 'success');
-                    
-                    // Redirect to login page after a short delay
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 1500);
-                } else {
-                    showToast(data.message || 'Failed to logout', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error logging out:', error);
-                showToast('An error occurred while logging out', 'error');
-            });
-    }
-    
-    // Show toast notification
-    function showToast(message, type = 'info') {
-        // Create toast if it doesn't exist
-        let toast = document.getElementById('toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'toast';
-            toast.className = 'toast';
             
-            const icon = document.createElement('i');
-            icon.className = 'fas toast-icon';
-            
-            const msgSpan = document.createElement('span');
-            msgSpan.id = 'toast-message';
-            
-            toast.appendChild(icon);
-            toast.appendChild(msgSpan);
-            document.body.appendChild(toast);
-        }
-        
-        const toastMessage = document.getElementById('toast-message');
-        const toastIcon = toast.querySelector('.toast-icon');
-        
-        // Set message and update icon
-        if (toastMessage) {
-            toastMessage.textContent = message;
-        }
-        
-        if (toastIcon) {
-            toastIcon.className = 'fas toast-icon';
-            
-            switch(type) {
-                case 'success':
-                    toastIcon.classList.add('fa-check-circle');
-                    break;
-                case 'error':
-                    toastIcon.classList.add('fa-times-circle');
-                    break;
-                case 'warning':
-                    toastIcon.classList.add('fa-exclamation-triangle');
-                    break;
-                default:
-                    toastIcon.classList.add('fa-info-circle');
+            // Show login buttons as fallback
+            if (authButtonsContainer) {
+                authButtonsContainer.innerHTML = `
+                    <a href="login.html" class="btn secondary-btn btn-sm login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                    <a href="login.html" class="btn primary-btn btn-sm signup-btn">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </a>
+                `;
+                authButtonsContainer.style.display = 'flex';
             }
-        }
-        
-        // Set toast type and show it
-        toast.className = `toast ${type} show`;
-        
-        // Hide toast after 3 seconds
-        setTimeout(() => {
-            toast.className = toast.className.replace('show', '');
-        }, 3000);
+            
+            // Hide profile icon
+            if (profileIcon) {
+                profileIcon.style.display = 'none';
+            }
+        });
     }
     
     // Initialize onboarding overlay functionality

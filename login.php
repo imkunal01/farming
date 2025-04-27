@@ -20,28 +20,10 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'status') {
     // Check if user is logged in
     if (isset($_SESSION['user_id'])) {
-        response(true, "User is logged in", [
-            'logged_in' => true,
-            'user' => [
-                'id' => $_SESSION['user_id'],
-                'name' => $_SESSION['user_name'],
-                'email' => $_SESSION['user_email'],
-                'user_type' => $_SESSION['user_type'],
-                'profile_image' => $_SESSION['profile_image'] ?? null
-            ]
-        ]);
+        response(true, "User is logged in", ['logged_in' => true]);
     } else {
         response(true, "User is not logged in", ['logged_in' => false]);
     }
-}
-
-// Handle logout request
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'logout') {
-    // Clear session variables
-    session_unset();
-    // Destroy the session
-    session_destroy();
-    response(true, "Logout successful");
 }
 
 // Process POST requests
@@ -59,21 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'reset_password':
             handlePasswordReset();
             break;
-        case 'logout':
-            handleLogout();
-            break;
         default:
             response(false, "Invalid action");
     }
-}
-
-// Handle logout
-function handleLogout() {
-    // Clear session variables
-    session_unset();
-    // Destroy the session
-    session_destroy();
-    response(true, "Logout successful");
 }
 
 // Handle login
