@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Estimation | AgriGlance</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        document.getElementById("lat").value = position.coords.latitude;
+                        document.getElementById("lng").value = position.coords.longitude;
+                    },
+                    function (error) {
+                        alert("Location access denied! Please enable location services.");
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+    </script>   
+</head>
+<body onload="getLocation()">
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <i class="fas fa-moon"></i>
+    </button>
+    
+    <div class="container">
+        <header>
+            <div class="back-button" onclick="history.back()">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            <h1><i class="fas fa-seedling"></i> AgriGlance</h1>
+            <nav>
+                <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                <a href="dashboard.html"><i class="fas fa-map-marker-alt"></i> Weather Dashboard</a>
+                <a href="main.html" class="active"><i class="fas fa-calculator"></i> Crop Estimation</a>
+                <a href="pest_tracker/index.html"><i class="fas fa-bug"></i> Pest Tracker</a>
+                <a href="crop_planner/index.html"><i class="fas fa-sync-alt"></i> Crop Rotation</a>
+                <a href="profile.html"><i class="fas fa-user-circle"></i> Profile</a>
+            </nav>
+            <div class="user-profile-icon">
+                <a href="profile.html" title="View Profile">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                        <img id="header-profile-img" src="" alt="Profile" style="display: none;">
+                    </div>
+                </a>
+            </div>
+        </header>
+
+        <main>
+            <section class="form-container">
+                <h2><i class="fas fa-clipboard-list"></i> Enter Crop Data</h2>
+                <div class="action-links">
+                    <a href="saved_estimates.php" class="btn secondary-btn"><i class="fas fa-history"></i> View Saved Estimates</a>
+                </div>
+                <form id="crop-form">
+                    <div class="form-group">
+                        <label for="crop-type"><i class="fas fa-seedling"></i> Crop Type:</label>
+                        <select id="crop-type" required>
+                            <option value="">Select crop</option>
+                            <option value="wheat">Wheat</option>
+                            <option value="rice">Rice</option>
+                            <option value="maize">Maize</option>
+                            <option value="barley">Barley</option>
+                            <option value="sugarcane">Sugarcane</option>
+                            <option value="cotton">Cotton</option>
+                            <option value="soybean">Soybean</option>
+                            <option value="potato">Potato</option>
+                            <option value="tomato">Tomato</option>
+                            <option value="onion">Onion</option>
+                            <option value="garlic">Garlic</option>
+                            <option value="ginger">Ginger</option>
+                            <option value="chilli">Chilli</option>
+                            <option value="beans">Beans</option>
+                            <option value="cucumber">Cucumber</option>
+                            
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="land-area"><i class="fas fa-draw-polygon"></i> Land Area (in hectares):</label>
+                        <input type="number" id="land-area" step="0.01" min="0.01" placeholder="Enter area size" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="soil-type"><i class="fas fa-mountain"></i> Soil Type:</label>
+                        <select id="soil-type" required>
+                            <option value="">Select soil type</option>
+                            <option value="loamy">Loamy</option>
+                            <option value="sandy">Sandy</option>
+                            <option value="clay">Clay</option>
+                            <option value="silt">Silt</option>
+                            <option value="chalky">Chalky</option>
+                            <option value="peaty">Peaty</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="irrigation"><i class="fas fa-tint"></i> Irrigation Method:</label>
+                        <select id="irrigation" required>
+                            <option value="">Select irrigation method</option>
+                            <option value="drip">Drip Irrigation</option>
+                            <option value="sprinkler">Sprinkler</option>
+                            <option value="flood">Flood Irrigation</option>
+                            <option value="furrow">Furrow Irrigation</option>
+                            <option value="rainFed">Rain-fed</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pest-factor"><i class="fas fa-bug"></i> Pest Pressure:</label>
+                        <select id="pest-factor" required>
+                            <option value="">Select pest pressure</option>
+                            <option value="none">None</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fertilizer"><i class="fas fa-flask"></i> Fertilizer Application:</label>
+                        <select id="fertilizer" required>
+                            <option value="">Select fertilizer level</option>
+                            <option value="none">None</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="season"><i class="fas fa-sun"></i> Growing Season:</label>
+                        <select id="season" required>
+                            <option value="">Select season</option>
+                            <option value="winter">Winter</option>
+                            <option value="spring">Spring</option>
+                            <option value="summer">Summer</option>
+                            <option value="autumn">Autumn</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="experience"><i class="fas fa-user-clock"></i> Farming Experience (years):</label>
+                        <input type="number" id="experience" min="0" placeholder="Years of experience" required>
+                    </div>
+
+                    <button type="submit" class="btn primary-btn"><i class="fas fa-calculator"></i> Calculate Estimate</button>
+                </form>
+            </section>
+
+            <section id="result-container" class="result-container" style="display: none;">
+                <h2><i class="fas fa-chart-bar"></i> Yield Estimation Result</h2>
+                <div class="result-details">
+                    <div class="result-item">
+                        <strong><i class="fas fa-seedling"></i> Crop:</strong> <span id="result-crop"></span>
+                    </div>
+                    <div class="result-item">
+                        <strong><i class="fas fa-draw-polygon"></i> Land Area:</strong> <span id="result-area"></span> hectares
+                    </div>
+                    <div class="result-item">
+                        <strong><i class="fas fa-chart-line"></i> Estimated Yield:</strong> <span id="result-yield"></span> tons/hectare
+                    </div>
+                    <div class="result-item highlight">
+                        <strong><i class="fas fa-tractor"></i> Total Estimated Production:</strong> <span id="result-total"></span> tons
+                    </div>
+                    <div class="result-item">
+                        <strong><i class="fas fa-star"></i> Quality Factor:</strong> <span id="result-quality"></span>
+                    </div>
+                    <div class="result-item">
+                        <strong><i class="fas fa-percentage"></i> Confidence Level:</strong> <span id="result-confidence"></span>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="recalculate-btn" class="btn secondary-btn"><i class="fas fa-redo"></i> Recalculate</button>
+                    <button id="save-result-btn" class="btn primary-btn"><i class="fas fa-save"></i> Save Result</button>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Theme Toggle JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = themeToggle.querySelector('i');
+            
+            // Check for saved theme preference or use device preference
+            const savedTheme = localStorage.getItem('theme') || 
+                (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            // Apply saved theme
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateIcon(savedTheme);
+            
+            // Toggle theme
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateIcon(newTheme);
+            });
+            
+            // Update icon based on theme
+            function updateIcon(theme) {
+                if (theme === 'dark') {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                } else {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                }
+            }
+        });
+    </script>
+
+    <!-- Floating AI Chatbot -->
+    <div class="chatbot-container">
+        <button id="chatbot-toggle" class="chatbot-toggle">
+            <i class="fas fa-robot"></i>
+        </button>
+        <div id="chatbot-wrapper" class="chatbot-wrapper">
+            <div class="chatbot-header">
+                <h3><i class="fas fa-robot"></i> AI Farming Assistant</h3>
+                <button id="chatbot-close" class="chatbot-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="chatbot-messages" class="chatbot-messages">
+                <div class="bot-message">
+                    Hello! I'm your farming assistant. How can I help you today?
+                </div>
+            </div>
+            <div class="chatbot-quick-replies">
+                <span class="quick-reply" data-query="How to manage pests?">Pest Management</span>
+                <span class="quick-reply" data-query="Best crops for clay soil?">Clay Soil Crops</span>
+                <span class="quick-reply" data-query="Organic fertilizers?">Organic Fertilizers</span>
+                <span class="quick-reply" data-query="Best irrigation methods?">Irrigation</span>
+            </div>
+            <div class="chatbot-input-container">
+                <input type="text" id="chatbot-input" placeholder="Type your question...">
+                <button id="chatbot-send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="crop_estimation.js"></script>
+    <script src="chatbot.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard | Crop Monitoring System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+    <!-- Chart.js for weather charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <i class="fas fa-moon"></i>
+    </button>
+    
+    <div class="container">
+        <header>
+            <div class="back-button" style="display: none;">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            <h1><i class="fas fa-seedling"></i> AgriGlance</h1>
+            <nav>
+                <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                <a href="dashboard.html" class="active"><i class="fas fa-cloud-sun-rain"></i> Weather</a>
+                <a href="main.html"><i class="fas fa-calculator"></i> Crop Estimation</a>
+                <a href="pest_tracker/index.html"><i class="fas fa-bug"></i> Pest Tracker</a>
+                <a href="crop_planner/index.html"><i class="fas fa-sync-alt"></i> Crop Rotation</a>
+                <a href="profile.html"><i class="fas fa-user-circle"></i> Profile</a>
+                <a href="login.html" class="btn primary-btn btn-sm">
+                    <i class="fas fa-user-plus"></i> Account
+                </a>
+            </nav>
+            <div class="user-profile-icon" id="user-profile-icon" style="display: none;">
+                <a href="profile.html" title="View Profile">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                        <img id="header-profile-img" src="" alt="Profile" style="display: none;">
+                    </div>
+                </a>
+            </div>
+        </header>
+        
+        <main class="dashboard">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-map-marked-alt"></i> Weather Dashboard</h2>
+                <p class="dashboard-subtitle">Track weather conditions for your crop locations</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Map Section -->
+                <section class="map-section">
+                    <div class="card map-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-map-marker-alt"></i> Crop Location Map</h3>
+                    <div class="map-controls">
+                        <button id="clear-last-location" class="btn secondary-btn btn-sm">
+                                    <i class="fas fa-trash-alt"></i> Clear Location
+                        </button>
+                            </div>
+                        </div>
+                        <p class="instruction-text">Click anywhere on the map to set your crop location and get weather data</p>
+                        <div id="map"></div>
+                    </div>
+                </section>
+
+                <!-- Current Weather Section -->
+                <section class="weather-section">
+                    <div class="card weather-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-temperature-high"></i> Current Weather</h3>
+                        </div>
+                    <div id="weather-data">
+                        <p class="placeholder-text">Select a location on the map to view weather data</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Forecast Section -->
+                <section class="forecast-section">
+                    <div class="card forecast-card" id="weather-forecast" style="display: none;">
+                        <div class="card-header">
+                        <h3><i class="fas fa-calendar-day"></i> 5-Day Forecast</h3>
+                        </div>
+                        <div class="forecast-container"></div>
+                    </div>
+                </section>
+
+                <!-- Charts Section -->
+                <section class="charts-section">
+                    <div class="card chart-card" id="weather-charts" style="display: none;">
+                        <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Weather Trends</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="temperatureChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Crop Recommendations Section -->
+            <section id="crop-recommendations" style="display: none;">
+                <div class="card recommendations-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-seedling accent-green"></i> Crop Recommendations</h3>
+                    </div>
+                <div class="info-grid">
+                    <!-- This will be populated by JavaScript based on weather conditions -->
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Weather Guide Section -->
+            <section class="guide-section">
+                <div class="card guide-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-info-circle accent-blue"></i> Weather Interpretation Guide</h3>
+                    </div>
+                <div class="info-grid">
+                    <div class="info-card">
+                            <h4><i class="fas fa-thermometer-half accent-red"></i> Temperature</h4>
+                        <ul>
+                            <li><strong>Below 10°C:</strong> Cold stress for most crops. Protect sensitive plants.</li>
+                            <li><strong>10-20°C:</strong> Ideal for cool-season crops (lettuce, spinach, peas).</li>
+                            <li><strong>20-30°C:</strong> Optimal for most crops. Good growing conditions.</li>
+                            <li><strong>Above 30°C:</strong> Heat stress possible. Increase watering and provide shade.</li>
+                        </ul>
+                    </div>
+                    <div class="info-card">
+                            <h4><i class="fas fa-tint accent-blue"></i> Humidity</h4>
+                        <ul>
+                            <li><strong>Below 30%:</strong> Low humidity. Increased water needs.</li>
+                            <li><strong>30-60%:</strong> Moderate humidity. Optimal for most crops.</li>
+                            <li><strong>Above 60%:</strong> High humidity. Monitor for fungal diseases.</li>
+                        </ul>
+                    </div>
+                    <div class="info-card">
+                            <h4><i class="fas fa-wind accent-blue"></i> Wind Speed</h4>
+                        <ul>
+                            <li><strong>Below 5 m/s:</strong> Light wind. Generally beneficial for pollination.</li>
+                            <li><strong>5-10 m/s:</strong> Moderate wind. May cause mechanical stress.</li>
+                            <li><strong>Above 10 m/s:</strong> Strong wind. Potential for crop damage, consider windbreaks.</li>
+                        </ul>
+                    </div>
+                    <div class="info-card">
+                            <h4><i class="fas fa-cloud-rain accent-blue"></i> Rainfall</h4>
+                        <ul>
+                            <li><strong>Light Rain:</strong> Beneficial for most crops.</li>
+                            <li><strong>Heavy Rain:</strong> Risk of waterlogging and disease. Check drainage.</li>
+                            <li><strong>No Rain:</strong> Monitor soil moisture and consider irrigation.</li>
+                        </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2024 AgriGlance | Weather data provided by <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a></p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="chatbot.js"></script>
+    <script src="index.js"></script>
+</body>
+</html> 
